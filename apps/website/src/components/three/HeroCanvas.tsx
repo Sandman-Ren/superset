@@ -81,20 +81,20 @@ function LitBackground() {
                 <Text
                     position={[0, 0, 0.02]}
                     fontSize={1.805}
-                    color="#0a0a0a"
+                    color="#000000"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.005}
-                    outlineColor="#ffffff"
+                    outlineWidth={0.008}
+                    outlineColor="#000000"
                 >
                     ⊇
                     <meshStandardMaterial
-                        color="#4a5559"
-                        metalness={1.0}
-                        roughness={0.05}
+                        color="#000000"
+                        metalness={0.1}
+                        roughness={0.9}
                         emissive="#000000"
                         emissiveIntensity={0}
-                        envMapIntensity={2.5}
+                        envMapIntensity={0.2}
                     />
                 </Text>
 
