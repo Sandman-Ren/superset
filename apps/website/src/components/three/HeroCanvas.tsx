@@ -104,10 +104,10 @@ function LitBackground() {
         // Convert normalized mouse coords to full viewport range, or use default position
         const x = hasMouseMoved
             ? state.mouse.x * viewport.width
-            : viewport.width * 0.09; // A bit more to the right
+            : viewport.width * 0.18; // A bit more to the right
         const y = hasMouseMoved
             ? state.mouse.y * viewport.height
-            : -viewport.height * 0.03; // Down lower (negative y moves down)
+            : viewport.height * 0.01; // Down lower (negative y moves down)
 
         // Change color based on position - cooler palette (blue to cyan to purple)
         const hue = 180 + ((state.mouse.x + 1) / 2) * 90; // 180-270 degrees
