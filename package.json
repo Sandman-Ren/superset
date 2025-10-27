@@ -20,6 +20,7 @@
 		"db:push": "cd packages/db && bun db:push",
 		"db:seed": "cd packages/db && bun db:seed",
 		"db:migrate": "cd packages/db && bun db:migrate",
+		"db:studio": "cd packages/db && bun db:studio",
 		"db:reset": "cd apps/backend && bun run reset",
 		"lint": "biome check --write .",
 		"lint:check": "biome check .",

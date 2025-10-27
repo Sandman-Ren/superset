@@ -6,6 +6,6 @@ import { config } from "dotenv";
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load environment variables from the app root directory
-const appRoot = path.join(__dirname, "../..");
-config({ path: path.join(appRoot, ".env") });
+// Load environment variables from the monorepo root directory
+const monorepoRoot = path.join(__dirname, "../../../..");
+config({ path: path.join(monorepoRoot, ".env") });
