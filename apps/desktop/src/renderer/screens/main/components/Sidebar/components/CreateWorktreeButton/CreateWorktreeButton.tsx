@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 
 interface CreateWorktreeButtonProps {
   onClick: () => void;

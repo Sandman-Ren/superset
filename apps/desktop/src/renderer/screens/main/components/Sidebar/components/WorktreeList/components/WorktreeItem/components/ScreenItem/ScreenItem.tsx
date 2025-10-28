@@ -1,6 +1,6 @@
 import { SquareTerminal } from "lucide-react";
 import type { Screen } from "shared/types";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 
 interface ScreenItemProps {
   screen: Screen;

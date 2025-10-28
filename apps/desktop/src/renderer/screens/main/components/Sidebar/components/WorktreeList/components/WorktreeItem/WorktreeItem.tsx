@@ -1,6 +1,6 @@
 import { ChevronRight, GitBranch } from "lucide-react";
 import type { Worktree } from "shared/types";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 import { ScreenItem } from "./components/ScreenItem";
 
 interface WorktreeItemProps {

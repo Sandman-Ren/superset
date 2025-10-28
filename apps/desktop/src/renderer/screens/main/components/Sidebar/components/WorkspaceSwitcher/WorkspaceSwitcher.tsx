@@ -1,18 +1,18 @@
 import { Plus } from "lucide-react";
 import type { Workspace } from "shared/types";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "renderer/components/ui/context-menu";
-import { ScrollArea, ScrollBar } from "renderer/components/ui/scroll-area";
+} from "@superset/ui/context-menu";
+import { ScrollArea, ScrollBar } from "@superset/ui/scroll-area";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "renderer/components/ui/tooltip";
+} from "@superset/ui/tooltip";
 import { getWorkspaceIcon } from "../../utils";
 
 interface WorkspaceSwitcherProps {

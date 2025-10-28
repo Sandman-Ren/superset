@@ -5,13 +5,12 @@ import {
 	PanelLeftOpen,
 	Plus,
 } from "lucide-react";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
-} from "renderer/components/ui/tooltip";
+} from "@superset/ui/tooltip";
 
 interface TopBarProps {
 	isSidebarOpen: boolean;
@@ -27,7 +26,6 @@ export function TopBar({
 	currentBranch,
 }: TopBarProps) {
 	return (
-		<TooltipProvider delayDuration={300}>
 			<div
 				className="flex items-center justify-between border-b border-neutral-800 bg-neutral-950 text-neutral-300 select-none"
 				style={{ height: "48px", WebkitAppRegion: "drag" } as React.CSSProperties}
@@ -89,6 +87,5 @@ export function TopBar({
 				</Button>
 			</div>
 			</div>
-		</TooltipProvider>
 	);
 }

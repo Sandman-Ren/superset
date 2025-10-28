@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { Workspace } from "shared/types";
-import { TooltipProvider } from "renderer/components/ui/tooltip";
 import {
   SidebarHeader,
   WorktreeList,
@@ -162,7 +161,6 @@ export function Sidebar({
   };
 
   return (
-    <TooltipProvider delayDuration={300}>
       <div className="flex flex-col h-full w-64 select-none bg-neutral-900 text-neutral-300 border-r border-neutral-800">
         <SidebarHeader
           onCollapse={onCollapse}
@@ -205,6 +203,5 @@ export function Sidebar({
           onBranchNameChange={setBranchName}
         />
       </div>
-    </TooltipProvider>
   );
 }

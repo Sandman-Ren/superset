@@ -10,6 +10,9 @@
 		"./icons": "./src/components/icons.tsx",
 		"./color-picker": "./src/components/color-picker.tsx",
 		"./ai-elements": "./src/components/ai-elements.tsx",
+		"./tooltip": "./src/components/tooltip.tsx",
+		"./context-menu": "./src/components/context-menu.tsx",
+		"./scroll-area": "./src/components/scroll-area.tsx",
 		"./utils": "./src/lib/utils.ts",
 		"./hooks": "./src/hooks/index.ts",
 		"./globals.css": "./src/globals.css"
@@ -18,7 +21,10 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@radix-ui/react-context-menu": "^2.2.16",
+		"@radix-ui/react-scroll-area": "^1.2.10",
 		"@radix-ui/react-slot": "^1.2.3",
+		"@radix-ui/react-tooltip": "^1.2.8",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.468.0",
@@ -26,16 +32,16 @@
 	},
 	"devDependencies": {
 		"@superset/typescript": "workspace:*",
-		"@tailwindcss/vite": "^4.0.0-beta.7",
-		"@types/react": "^18.3.18",
-		"@types/react-dom": "^18.3.5",
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1",
-		"tailwindcss": "^4.0.0-beta.7",
-		"typescript": "^5.7.3"
+		"@tailwindcss/vite": "^4.0.9",
+		"@types/react": "^19.1.11",
+		"@types/react-dom": "^19.1.7",
+		"react": "^19.1.1",
+		"react-dom": "^19.1.1",
+		"tailwindcss": "^4.0.9",
+		"typescript": "^5.9.3"
 	},
 	"peerDependencies": {
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1"
+		"react": "^18.3.1 || ^19.0.0",
+		"react-dom": "^18.3.1 || ^19.0.0"
 	}
 }

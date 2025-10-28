@@ -1,10 +1,10 @@
 import { PanelLeftClose, RefreshCw } from "lucide-react";
-import { Button } from "renderer/components/ui/button";
+import { Button } from "@superset/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "renderer/components/ui/tooltip";
+} from "@superset/ui/tooltip";
 
 interface SidebarHeaderProps {
   onCollapse: () => void;
