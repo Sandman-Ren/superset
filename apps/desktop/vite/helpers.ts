@@ -20,7 +20,9 @@ export function defineEnv(
 	value: string | undefined,
 	fallback?: string,
 ): string {
-	return JSON.stringify(value ?? fallback);
+	// Use || instead of ?? so empty strings (from unresolved GitHub Actions
+	// secrets) also fall through to the default value.
+	return JSON.stringify(value || fallback);
 }
 
 const RESOURCES_TO_COPY = [

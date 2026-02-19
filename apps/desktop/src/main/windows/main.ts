@@ -238,12 +238,6 @@ export async function MainWindow() {
 			window.webContents.setZoomLevel(savedWindowState.zoomLevel);
 		}
 		window.show();
-
-		// Open DevTools in production to help diagnose rendering issues.
-		// TODO: Remove this after debugging the Windows black screen issue.
-		if (env.NODE_ENV !== "development") {
-			window.webContents.openDevTools({ mode: "detach" });
-		}
 	});
 
 	window.webContents.on(
