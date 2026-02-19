@@ -260,10 +260,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: |
-          # Skip postinstall (bash script not executable on Windows), then run desktop deps manually
-          bun install --frozen --ignore-scripts
-          bun run --filter=@superset/desktop install:deps
+        run: bun install --frozen
 
       - name: Set version suffix
         if: inputs.version_suffix != ''
