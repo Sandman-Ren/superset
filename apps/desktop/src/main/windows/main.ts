@@ -220,8 +220,17 @@ export async function MainWindow() {
 		});
 	}
 
+	// Forward renderer console messages to main process stdout for debugging.
+	// Run the packaged app from a terminal to see these messages.
+	window.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+		const levelStr = ["verbose", "info", "warning", "error"][level] ?? "unknown";
+		const source = sourceId ? ` (${sourceId}:${line})` : "";
+		console.log(`[renderer:${levelStr}] ${message}${source}`);
+	});
+
 	window.webContents.on("did-finish-load", async () => {
 		console.log("[main-window] Renderer loaded successfully");
+		console.log("[main-window] URL:", window.webContents.getURL());
 		if (initialBounds.isMaximized) {
 			window.maximize();
 		}
@@ -229,6 +238,12 @@ export async function MainWindow() {
 			window.webContents.setZoomLevel(savedWindowState.zoomLevel);
 		}
 		window.show();
+
+		// Open DevTools in production to help diagnose rendering issues.
+		// TODO: Remove this after debugging the Windows black screen issue.
+		if (env.NODE_ENV !== "development") {
+			window.webContents.openDevTools({ mode: "detach" });
+		}
 	});
 
 	window.webContents.on(
