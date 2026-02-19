@@ -314,8 +314,9 @@ jobs:
             echo "::error::No .exe installer generated in apps/desktop/release"
             exit 1
           }
-          test -n "$(ls -1 release/*-win.yml 2>/dev/null)" || {
-            echo "::error::No Windows auto-update manifest generated in apps/desktop/release"
+          # electron-builder names the Windows manifest latest.yml (no -win suffix)
+          test -f "release/latest.yml" || {
+            echo "::error::No Windows auto-update manifest (latest.yml) generated in apps/desktop/release"
             exit 1
           }
 
@@ -331,6 +332,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_prefix }}-win-update-manifest
-          path: apps/desktop/release/*-win.yml
+          path: |
+            apps/desktop/release/*.yml
+            !apps/desktop/release/builder-debug.yml
           retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error

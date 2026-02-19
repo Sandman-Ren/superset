@@ -122,14 +122,9 @@ jobs:
               break
             fi
           done
-          for file in *-win.yml; do
-            if [[ -f "$file" && "$file" != "canary-win.yml" && "$file" != "latest-win.yml" ]]; then
-              cp "$file" "canary-win.yml"
-              cp "$file" "latest-win.yml"
-              echo "Created canary manifests: canary-win.yml, latest-win.yml from $file"
-              break
-            fi
-          done
+          # Windows manifest is named latest.yml by electron-builder (no -win suffix).
+          # With generateUpdatesFilesForAllChannels, canary.yml is also generated.
+          # Both are already correctly named for electron-updater.
 
       - name: List artifacts
         run: |

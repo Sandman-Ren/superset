@@ -102,13 +102,8 @@ jobs:
               break
             fi
           done
-          for file in *-win.yml; do
-            if [[ -f "$file" && "$file" != "latest-win.yml" ]]; then
-              cp "$file" "latest-win.yml"
-              echo "Created stable copy: latest-win.yml"
-              break
-            fi
-          done
+          # Windows manifest is already named latest.yml by electron-builder
+          # (no -win suffix, unlike macOS/Linux). No stable copy needed.
           echo "Release artifacts:"
           ls -la
 
