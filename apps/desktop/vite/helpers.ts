@@ -59,6 +59,23 @@ export function copyResourcesPlugin(): Plugin {
 }
 
 /**
+ * Strips the `crossorigin` attribute that Vite adds to script/link tags.
+ * Electron's ASAR file:// handler doesn't support CORS, so crossorigin
+ * causes the main JS bundle and CSS to silently fail to load (black screen).
+ */
+export function stripCrossOriginPlugin(): Plugin {
+	return {
+		name: "strip-crossorigin",
+		transformIndexHtml: {
+			order: "post",
+			handler(html) {
+				return html.replace(/ crossorigin/g, "");
+			},
+		},
+	};
+}
+
+/**
  * Injects environment variables into index.html CSP.
  */
 export function htmlEnvTransformPlugin(): Plugin {

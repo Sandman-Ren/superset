@@ -15,6 +15,7 @@ import {
 	defineEnv,
 	devPath,
 	htmlEnvTransformPlugin,
+	stripCrossOriginPlugin,
 } from "./vite/helpers";
 
 // override: true ensures .env values take precedence over inherited env vars
@@ -216,6 +217,7 @@ export default defineConfig({
 				port: Number(process.env.CODE_INSPECTOR_PORT) || undefined,
 			}),
 			htmlEnvTransformPlugin(),
+			stripCrossOriginPlugin(),
 		],
 
 		worker: {
