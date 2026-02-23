@@ -19,10 +19,11 @@ function copyDir({ src, dest }: { src: string; dest: string }): void {
 export function defineEnv(
 	value: string | undefined,
 	fallback?: string,
-): string {
+): string | undefined {
 	// Use || instead of ?? so empty strings (from unresolved GitHub Actions
 	// secrets) also fall through to the default value.
-	return JSON.stringify(value || fallback);
+	const resolved = value || fallback;
+	return resolved !== undefined ? JSON.stringify(resolved) : undefined;
 }
 
 const RESOURCES_TO_COPY = [

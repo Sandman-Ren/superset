@@ -220,12 +220,15 @@ export async function MainWindow() {
 		});
 	}
 
-	// Forward renderer console messages to main process stdout for debugging.
+	// Forward renderer warning/error messages to main process stdout for debugging.
 	// Run the packaged app from a terminal to see these messages.
 	window.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+		if (level < 2) return;
 		const levelStr = ["verbose", "info", "warning", "error"][level] ?? "unknown";
 		const source = sourceId ? ` (${sourceId}:${line})` : "";
-		console.log(`[renderer:${levelStr}] ${message}${source}`);
+		const formatted = `[renderer:${levelStr}] ${message}${source}`;
+		if (level === 3) console.error(formatted);
+		else console.warn(formatted);
 	});
 
 	window.webContents.on("did-finish-load", async () => {

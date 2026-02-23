@@ -21,10 +21,7 @@ process.env.SUPERSET_POSTINSTALL_RUNNING = "1";
 
 /** Run a command, inheriting stdio so output is visible. */
 function run(cmd) {
-	execSync(cmd, {
-		stdio: "inherit",
-		env: { ...process.env, SUPERSET_POSTINSTALL_RUNNING: "1" },
-	});
+	execSync(cmd, { stdio: "inherit" });
 }
 
 // Run sherif for workspace validation

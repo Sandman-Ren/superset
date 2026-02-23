@@ -334,8 +334,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_prefix }}-win-update-manifest
-          path: |
-            apps/desktop/release/*.yml
-            !apps/desktop/release/builder-debug.yml
+          path: apps/desktop/release/latest.yml
           retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error
