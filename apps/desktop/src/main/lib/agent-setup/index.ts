@@ -3,9 +3,14 @@ import {
 	cleanupGlobalOpenCodePlugin,
 	createClaudeWrapper,
 	createCodexWrapper,
+	createCopilotHookScript,
+	createCopilotWrapper,
 	createCursorAgentWrapper,
 	createCursorHookScript,
 	createCursorHooksJson,
+	createGeminiHookScript,
+	createGeminiSettingsJson,
+	createGeminiWrapper,
 	createOpenCodePlugin,
 	createOpenCodeWrapper,
 } from "./agent-wrappers";
@@ -44,6 +49,11 @@ export function setupAgentHooks(): void {
 	createCursorHookScript();
 	createCursorAgentWrapper();
 	createCursorHooksJson();
+	createGeminiHookScript();
+	createGeminiWrapper();
+	createGeminiSettingsJson();
+	createCopilotHookScript();
+	createCopilotWrapper();
 
 	createZshWrapper();
 	createBashWrapper();

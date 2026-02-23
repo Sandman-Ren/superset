@@ -14,6 +14,7 @@ import {
 	DEFAULT_AUTO_APPLY_DEFAULT_PRESET,
 	DEFAULT_CONFIRM_ON_QUIT,
 	DEFAULT_FILE_OPEN_MODE,
+	DEFAULT_OPEN_LINKS_IN_APP,
 	DEFAULT_SHOW_PRESETS_BAR,
 	DEFAULT_SHOW_RESOURCE_MONITOR,
 	DEFAULT_TERMINAL_LINK_BEHAVIOR,
@@ -51,6 +52,23 @@ const DEFAULT_PRESETS: Omit<TerminalPreset, "id">[] = [
 		commands: [
 			'codex -c model_reasoning_effort="high" --ask-for-approval never --sandbox danger-full-access -c model_reasoning_summary="detailed" -c model_supports_reasoning_summaries=true',
 		],
+	},
+	{
+		name: "copilot",
+		description: "Danger mode: All permissions auto-approved",
+		cwd: "",
+		commands: ["copilot --allow-all"],
+	},
+	{
+		name: "opencode",
+		cwd: "",
+		commands: ["opencode"],
+	},
+	{
+		name: "gemini",
+		description: "Danger mode: All permissions auto-approved",
+		cwd: "",
+		commands: ["gemini -y"],
 	},
 ];
 
@@ -615,6 +633,46 @@ export const createSettingsRouter = () => {
 					.onConflictDoUpdate({
 						target: settings.id,
 						set: { showResourceMonitor: input.enabled },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		getWorktreeBaseDir: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.worktreeBaseDir ?? null;
+		}),
+
+		setWorktreeBaseDir: publicProcedure
+			.input(z.object({ path: z.string().nullable() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, worktreeBaseDir: input.path })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { worktreeBaseDir: input.path },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		getOpenLinksInApp: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.openLinksInApp ?? DEFAULT_OPEN_LINKS_IN_APP;
+		}),
+
+		setOpenLinksInApp: publicProcedure
+			.input(z.object({ enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, openLinksInApp: input.enabled })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { openLinksInApp: input.enabled },
 					})
 					.run();
 

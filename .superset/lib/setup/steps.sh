@@ -162,6 +162,60 @@ step_setup_neon_branch() {
   return 0
 }
 
+cleanup_stale_electric_replication_sessions() {
+  if ! command -v psql &> /dev/null; then
+    warn "psql not found — skipping stale Electric replication cleanup"
+    return 0
+  fi
+
+  if [ -z "${DIRECT_URL:-}" ]; then
+    warn "Direct database URL not available — skipping stale Electric replication cleanup"
+    return 0
+  fi
+
+  local terminated_count
+  terminated_count=$(
+    PGCONNECT_TIMEOUT=5 psql "$DIRECT_URL" -Atq <<'SQL' 2>/dev/null || true
+WITH lock_pids AS (
+  SELECT DISTINCT l.pid
+  FROM pg_locks l
+  JOIN pg_stat_activity a ON a.pid = l.pid
+  WHERE l.locktype = 'advisory'
+    AND l.classid = 4294967295
+    AND l.objid = hashtext('electric_slot_default')
+    AND l.objsubid = 1
+    AND a.pid <> pg_backend_pid()
+),
+repl_pids AS (
+  SELECT pid
+  FROM pg_stat_activity
+  WHERE query LIKE 'START_REPLICATION SLOT "electric_slot_default"%'
+    AND pid <> pg_backend_pid()
+),
+victims AS (
+  SELECT pid FROM lock_pids
+  UNION
+  SELECT pid FROM repl_pids
+)
+SELECT COALESCE(SUM((pg_terminate_backend(pid))::int), 0)
+FROM victims;
+SQL
+  )
+
+  if [ -z "$terminated_count" ]; then
+    warn "Unable to verify stale Electric replication sessions (continuing)"
+    return 0
+  fi
+
+  if [ "$terminated_count" -gt 0 ] 2>/dev/null; then
+    warn "Terminated $terminated_count stale Electric replication session(s)"
+  else
+    success "No stale Electric replication sessions found"
+  fi
+
+  return 0
+}
+
 step_start_electric() {
   echo "⚡ Starting Electric SQL container..."
 
@@ -200,6 +254,9 @@ step_start_electric() {
   ELECTRIC_PORT=$((SUPERSET_PORT_BASE + 9))
   port_flag="-p $ELECTRIC_PORT:3000"
 
+  echo "  Clearing stale Electric replication sessions..."
+  cleanup_stale_electric_replication_sessions
+
   if ! docker run -d \
       --name "$ELECTRIC_CONTAINER" \
       $port_flag \
@@ -213,16 +270,30 @@ step_start_electric() {
   # Wait for Electric to be ready
   echo "  Waiting for Electric to be ready on port $ELECTRIC_PORT..."
   local ready=false
-  for i in {1..30}; do
-    if curl -s "http://localhost:$ELECTRIC_PORT/v1/health" &> /dev/null; then
+  local health_status="unknown"
+  for i in {1..60}; do
+    local health_response
+    health_response=$(curl -fsS "http://localhost:$ELECTRIC_PORT/v1/health" 2>/dev/null || true)
+    health_status=$(echo "$health_response" | jq -r '.status // empty' 2>/dev/null || true)
+
+    if [ "$health_status" = "active" ]; then
       ready=true
       break
     fi
+
+    if [ -z "$health_status" ]; then
+      health_status="unreachable"
+    fi
+
+    if [ $((i % 10)) -eq 0 ]; then
+      echo "  Electric status: $health_status (waiting for active)"
+    fi
+
     sleep 1
   done
 
   if [ "$ready" = false ]; then
-    error "Electric failed to start within 30s. Check logs: docker logs $ELECTRIC_CONTAINER"
+    error "Electric failed to become active within 60s (last status: $health_status). Check logs: docker logs $ELECTRIC_CONTAINER"
     return 1
   fi
 
@@ -444,6 +515,41 @@ step_write_env() {
 }
 PORTSJSON
   success "Port name mapping written to .superset/ports.json"
+
+  return 0
+}
+
+step_setup_local_mcp() {
+  echo "🔌 Setting up local MCP server in .mcp.json..."
+
+  local mcp_file=".mcp.json"
+  if [ ! -f "$mcp_file" ]; then
+    warn "No .mcp.json found — skipping local MCP setup"
+    step_skipped "Setup local MCP (no .mcp.json)"
+    return 0
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    error "jq not available"
+    return 1
+  fi
+
+  local api_port="${API_PORT:-$((${SUPERSET_PORT_BASE:-3000} + 1))}"
+  local local_url="http://localhost:${api_port}/api/agent/mcp"
+
+  # Add or update superset-local entry
+  local tmp_file="${mcp_file}.tmp.$$"
+  if ! jq --arg url "$local_url" '.mcpServers["superset-local"] = {"type": "http", "url": $url}' "$mcp_file" > "$tmp_file"; then
+    error "Failed to set local MCP entry"
+    rm -f "$tmp_file"
+    return 1
+  fi
+  if ! mv "$tmp_file" "$mcp_file"; then
+    error "Failed to write $mcp_file"
+    rm -f "$tmp_file"
+    return 1
+  fi
+  success "Local MCP set to $local_url"
 
   return 0
 }

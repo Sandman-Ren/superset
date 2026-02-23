@@ -13,6 +13,7 @@ import type {
 	SelectTask,
 	SelectTaskStatus,
 	SelectUser,
+	SelectWorkspace,
 } from "@superset/db/schema";
 import type { AppRouter } from "@superset/trpc";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
@@ -46,6 +47,7 @@ interface OrgCollections {
 	tasks: Collection<SelectTask>;
 	taskStatuses: Collection<SelectTaskStatus>;
 	projects: Collection<SelectProject>;
+	workspaces: Collection<SelectWorkspace>;
 	members: Collection<SelectMember>;
 	users: Collection<SelectUser>;
 	invitations: Collection<SelectInvitation>;
@@ -163,6 +165,22 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	const workspaces = createCollection(
+		electricCollectionOptions<SelectWorkspace>({
+			id: `workspaces-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "workspaces",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const members = createCollection(
 		electricCollectionOptions<SelectMember>({
 			id: `members-${organizationId}`,
@@ -226,19 +244,11 @@ function createOrgCollections(organizationId: string): OrgCollections {
 			getKey: (item) => item.id,
 			onUpdate: async ({ transaction }) => {
 				const { original, changes } = transaction.mutations[0];
-				if (!changes.status) {
-					return { txid: Date.now() };
-				}
 				const result = await apiClient.agent.updateCommand.mutate({
+					...changes,
 					id: original.id,
-					status: changes.status,
-					claimedBy: changes.claimedBy ?? undefined,
-					claimedAt: changes.claimedAt ?? undefined,
-					result: changes.result ?? undefined,
-					error: changes.error ?? undefined,
-					executedAt: changes.executedAt ?? undefined,
 				});
-				return { txid: Number(result.txid) };
+				return { txid: result.txid };
 			},
 		}),
 	);
@@ -343,6 +353,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		tasks,
 		taskStatuses,
 		projects,
+		workspaces,
 		members,
 		users,
 		invitations,

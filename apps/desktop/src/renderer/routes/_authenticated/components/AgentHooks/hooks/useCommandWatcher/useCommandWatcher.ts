@@ -86,21 +86,7 @@ export function useCommandWatcher() {
 			console.log(`[command-watcher] Processing: ${commandId} (${tool})`);
 
 			try {
-				collections.agentCommands.update(commandId, (draft) => {
-					draft.status = "claimed";
-					draft.claimedBy = deviceInfo?.deviceId ?? null;
-					draft.claimedAt = new Date();
-				});
-
-				await new Promise((resolve) => setTimeout(resolve, 100));
-
-				collections.agentCommands.update(commandId, (draft) => {
-					draft.status = "executing";
-				});
-
 				const result = await executeTool(tool, params, toolContext);
-
-				await new Promise((resolve) => setTimeout(resolve, 100));
 
 				if (result.success) {
 					collections.agentCommands.update(commandId, (draft) => {
@@ -109,7 +95,6 @@ export function useCommandWatcher() {
 						draft.executedAt = new Date();
 					});
 				} else {
-					// Include per-item errors from bulk operations in the error message
 					const itemErrors = (
 						result.data?.errors as Array<{ error: string }> | undefined
 					)
@@ -132,15 +117,16 @@ export function useCommandWatcher() {
 				}
 			} catch (error) {
 				console.error(`[command-watcher] Error: ${commandId}`, error);
+				const errorMsg =
+					error instanceof Error ? error.message : "Execution error";
 				collections.agentCommands.update(commandId, (draft) => {
 					draft.status = "failed";
-					draft.error =
-						error instanceof Error ? error.message : "Execution error";
+					draft.error = errorMsg;
 					draft.executedAt = new Date();
 				});
 			}
 		},
-		[collections.agentCommands, deviceInfo?.deviceId, toolContext],
+		[collections.agentCommands, toolContext],
 	);
 
 	useEffect(() => {
@@ -154,6 +140,21 @@ export function useCommandWatcher() {
 		}
 
 		const now = new Date();
+
+		// Expire timed-out commands before filtering for execution
+		for (const cmd of pendingCommands) {
+			if (cmd.targetDeviceId !== deviceInfo.deviceId) continue;
+			if (cmd.organizationId !== organizationId) continue;
+			if (handledCommands.has(cmd.id)) continue;
+			if (cmd.timeoutAt && new Date(cmd.timeoutAt) < now) {
+				collections.agentCommands.update(cmd.id, (draft) => {
+					draft.status = "timeout";
+					draft.error = "Command expired before execution";
+				});
+				handledCommands.add(cmd.id);
+			}
+		}
+
 		const commandsForThisDevice = pendingCommands.filter((cmd) => {
 			if (cmd.targetDeviceId !== deviceInfo.deviceId) return false;
 			if (handledCommands.has(cmd.id)) return false;
@@ -161,14 +162,6 @@ export function useCommandWatcher() {
 			// Security: verify org matches (don't trust Electric filtering alone)
 			if (cmd.organizationId !== organizationId) {
 				console.warn(`[command-watcher] Org mismatch for ${cmd.id}`);
-				return false;
-			}
-
-			if (cmd.timeoutAt && new Date(cmd.timeoutAt) < now) {
-				collections.agentCommands.update(cmd.id, (draft) => {
-					draft.status = "timeout";
-					draft.error = "Command expired before execution";
-				});
 				return false;
 			}
 

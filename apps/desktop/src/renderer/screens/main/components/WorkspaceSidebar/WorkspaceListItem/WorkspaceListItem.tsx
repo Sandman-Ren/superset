@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { HiMiniXMark } from "react-icons/hi2";
 import {
+	LuBellOff,
 	LuCopy,
 	LuEye,
 	LuEyeOff,
@@ -97,6 +98,7 @@ export function WorkspaceListItem({
 	const clearWorkspaceAttentionStatus = useTabsStore(
 		(s) => s.clearWorkspaceAttentionStatus,
 	);
+	const resetWorkspaceStatus = useTabsStore((s) => s.resetWorkspaceStatus);
 	const utils = electronTrpc.useUtils();
 
 	const isActive = !!matchRoute({
@@ -394,13 +396,6 @@ export function WorkspaceListItem({
 								{isBranchWorkspace ? "local" : name || branch}
 							</span>
 
-							{shortcutIndex !== undefined &&
-								shortcutIndex < MAX_KEYBOARD_SHORTCUT_INDEX && (
-									<span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-mono tabular-nums shrink-0">
-										⌘{shortcutIndex + 1}
-									</span>
-								)}
-
 							{isBranchWorkspace && aheadBehind && (
 								<WorkspaceAheadBehind
 									ahead={aheadBehind.ahead}
@@ -408,45 +403,43 @@ export function WorkspaceListItem({
 								/>
 							)}
 
-							{isBranchWorkspace && diffStats && (
-								<WorkspaceDiffStats
-									additions={diffStats.additions}
-									deletions={diffStats.deletions}
-									isActive={isActive}
-								/>
-							)}
-
-							{!isBranchWorkspace &&
-								(diffStats ? (
+							<div className="grid shrink-0 h-5 [&>*]:col-start-1 [&>*]:row-start-1 items-center">
+								{diffStats && (
 									<WorkspaceDiffStats
 										additions={diffStats.additions}
 										deletions={diffStats.deletions}
 										isActive={isActive}
-										onClose={(e) => {
-											e.stopPropagation();
-											handleDeleteClick();
-										}}
 									/>
-								) : (
-									<Tooltip delayDuration={300}>
-										<TooltipTrigger asChild>
-											<button
-												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDeleteClick();
-												}}
-												className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-muted-foreground hover:text-foreground"
-												aria-label="Close workspace"
-											>
-												<HiMiniXMark className="size-3.5" />
-											</button>
-										</TooltipTrigger>
-										<TooltipContent side="top" sideOffset={4}>
-											Close workspace
-										</TooltipContent>
-									</Tooltip>
-								))}
+								)}
+								<div className="flex items-center justify-end gap-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-[opacity,visibility]">
+									{shortcutIndex !== undefined &&
+										shortcutIndex < MAX_KEYBOARD_SHORTCUT_INDEX && (
+											<span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">
+												⌘{shortcutIndex + 1}
+											</span>
+										)}
+									{!isBranchWorkspace && (
+										<Tooltip delayDuration={300}>
+											<TooltipTrigger asChild>
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														handleDeleteClick();
+													}}
+													className="flex items-center justify-center text-muted-foreground hover:text-foreground"
+													aria-label="Close workspace"
+												>
+													<HiMiniXMark className="size-3.5" />
+												</button>
+											</TooltipTrigger>
+											<TooltipContent side="top" sideOffset={4}>
+												Close workspace
+											</TooltipContent>
+										</Tooltip>
+									)}
+								</div>
+							</div>
 						</div>
 
 						{(showBranchSubtitle || pr) && (
@@ -502,6 +495,12 @@ export function WorkspaceListItem({
 			</ContextMenuItem>
 			<ContextMenuSeparator />
 			{unreadMenuItem}
+			{workspaceStatus && (
+				<ContextMenuItem onSelect={() => resetWorkspaceStatus(id)}>
+					<LuBellOff className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
+					Clear Status
+				</ContextMenuItem>
+			)}
 		</>
 	);
 

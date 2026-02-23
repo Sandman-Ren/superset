@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTerminalTheme } from "renderer/stores/theme";
-import { ConnectionErrorOverlay, SessionKilledOverlay } from "./components";
+import { SessionKilledOverlay } from "./components";
 import {
 	DEFAULT_TERMINAL_FONT_FAMILY,
 	DEFAULT_TERMINAL_FONT_SIZE,
@@ -122,6 +122,17 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 		workspaceCwd,
 	});
 
+	// URL click handler - opens in app browser or system browser based on setting
+	const { data: openLinksInApp } =
+		electronTrpc.settings.getOpenLinksInApp.useQuery();
+	const openInBrowserPane = useTabsStore((s) => s.openInBrowserPane);
+	const handleUrlClickRef = useRef<((url: string) => void) | undefined>(
+		undefined,
+	);
+	handleUrlClickRef.current = openLinksInApp
+		? (url: string) => openInBrowserPane(workspaceId, url)
+		: undefined;
+
 	// Refs for stream event handlers (populated after useTerminalStream)
 	// These allow flushPendingEvents to call the handlers via refs
 	const handleTerminalExitRef = useRef<
@@ -225,6 +236,10 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 	const connectionErrorRef = useRef(connectionError);
 	connectionErrorRef.current = connectionError;
 
+	// Auto-retry connection with exponential backoff
+	const retryCountRef = useRef(0);
+	const MAX_RETRIES = 5;
+
 	// Stream handling
 	const { handleTerminalExit, handleStreamError, handleStreamData } =
 		useTerminalStream({
@@ -249,6 +264,7 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 		onData: (event) => {
 			if (connectionErrorRef.current && event.type === "data") {
 				setConnectionError(null);
+				retryCountRef.current = 0;
 			}
 			handleStreamData(event);
 		},
@@ -263,6 +279,25 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 		},
 		enabled: true,
 	});
+
+	// Auto-retry when connection error is set
+	useEffect(() => {
+		if (!connectionError) return;
+		if (isExitedRef.current) return;
+		if (retryCountRef.current >= MAX_RETRIES) return;
+
+		if (retryCountRef.current === 0) {
+			xtermRef.current?.writeln(
+				"\r\n\x1b[90m[Connection lost. Reconnecting...]\x1b[0m",
+			);
+		}
+
+		const delay = Math.min(1000 * 2 ** retryCountRef.current, 10_000);
+		retryCountRef.current++;
+
+		const timeout = setTimeout(handleRetryConnection, delay);
+		return () => clearTimeout(timeout);
+	}, [connectionError, handleRetryConnection]);
 
 	const { isSearchOpen, setIsSearchOpen } = useTerminalHotkeys({
 		isFocused,
@@ -290,6 +325,7 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 		initialThemeRef,
 		workspaceCwdRef,
 		handleFileLinkClickRef,
+		handleUrlClickRef,
 		paneInitialCommandsRef,
 		paneInitialCwdRef,
 		clearPaneInitialDataRef,
@@ -389,9 +425,6 @@ export const Terminal = ({ paneId, tabId, workspaceId }: TerminalProps) => {
 			<ScrollToBottomButton terminal={xtermInstance} />
 			{exitStatus === "killed" && !connectionError && !isRestoredMode && (
 				<SessionKilledOverlay onRestart={restartTerminal} />
-			)}
-			{connectionError && (
-				<ConnectionErrorOverlay onRetry={handleRetryConnection} />
 			)}
 			<div ref={terminalRef} className="h-full w-full" />
 		</div>
