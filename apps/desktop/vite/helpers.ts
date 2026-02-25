@@ -19,11 +19,8 @@ function copyDir({ src, dest }: { src: string; dest: string }): void {
 export function defineEnv(
 	value: string | undefined,
 	fallback?: string,
-): string | undefined {
-	// Use || instead of ?? so empty strings (from unresolved GitHub Actions
-	// secrets) also fall through to the default value.
-	const resolved = value || fallback;
-	return resolved !== undefined ? JSON.stringify(resolved) : undefined;
+): string {
+	return JSON.stringify(value ?? fallback);
 }
 
 const RESOURCES_TO_COPY = [
@@ -67,8 +64,9 @@ export function copyResourcesPlugin(): Plugin {
 
 /**
  * Strips the `crossorigin` attribute that Vite adds to script/link tags.
- * Electron's ASAR file:// handler doesn't support CORS, so crossorigin
- * causes the main JS bundle and CSS to silently fail to load (black screen).
+ * Windows-only: Electron's ASAR file:// handler doesn't support CORS on
+ * Windows, so crossorigin causes scripts/styles to silently fail to load
+ * (black screen). macOS and Linux are unaffected.
  */
 export function stripCrossOriginPlugin(): Plugin {
 	return {
@@ -76,7 +74,8 @@ export function stripCrossOriginPlugin(): Plugin {
 		transformIndexHtml: {
 			order: "post",
 			handler(html) {
-				return html.replace(/ crossorigin/g, "");
+				if (process.platform !== "win32") return html;
+				return html.replace(/ crossorigin(?:="[^"]*")?/g, "");
 			},
 		},
 	};
