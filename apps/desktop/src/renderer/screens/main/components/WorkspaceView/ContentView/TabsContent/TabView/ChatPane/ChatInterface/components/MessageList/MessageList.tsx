@@ -5,21 +5,26 @@ import {
 	ConversationScrollButton,
 } from "@superset/ui/ai-elements/conversation";
 import { Message, MessageContent } from "@superset/ui/ai-elements/message";
-import { Shimmer } from "@superset/ui/ai-elements/shimmer";
+import { ShimmerLabel } from "@superset/ui/ai-elements/shimmer-label";
 import type { ChatStatus, UIMessage } from "ai";
 import { FileIcon, FileTextIcon, ImageIcon } from "lucide-react";
 import { useCallback } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import { useTabsStore } from "renderer/stores/tabs/store";
+import type { InterruptedMessagePreview } from "../../types";
 import { MessagePartsRenderer } from "../MessagePartsRenderer";
 import { MessageScrollbackRail } from "./components/MessageScrollbackRail";
 
 interface MessageListProps {
 	messages: UIMessage[];
+	interruptedMessage?: InterruptedMessagePreview | null;
 	isStreaming: boolean;
 	submitStatus?: ChatStatus;
 	workspaceId?: string;
-	onAnswer?: (toolCallId: string, answers: Record<string, string>) => void;
+	onAnswer: (
+		toolCallId: string,
+		answers: Record<string, string>,
+	) => Promise<void>;
 }
 
 function FileChip({
@@ -47,6 +52,7 @@ function FileChip({
 
 export function MessageList({
 	messages,
+	interruptedMessage,
 	isStreaming,
 	submitStatus,
 	workspaceId,
@@ -67,7 +73,7 @@ export function MessageList({
 	return (
 		<Conversation className="flex-1">
 			<ConversationContent className="mx-auto w-full max-w-3xl gap-6 py-6 pl-4 pr-16">
-				{messages.length === 0 ? (
+				{messages.length === 0 && !interruptedMessage ? (
 					<ConversationEmptyState
 						title="Start a conversation"
 						description="Ask anything to get started"
@@ -77,6 +83,8 @@ export function MessageList({
 					messages.map((msg, index) => {
 						const isLastAssistant =
 							msg.role === "assistant" && index === messages.length - 1;
+						const shouldAnimateStreaming =
+							isLastAssistant && (isStreaming || submitStatus === "submitted");
 
 						if (msg.role === "user") {
 							const textContent = msg.parts
@@ -144,17 +152,14 @@ export function MessageList({
 							<Message key={msg.id} from={msg.role}>
 								<MessageContent>
 									{isLastAssistant && isThinking && msg.parts.length === 0 ? (
-										<Shimmer
-											className="text-sm text-muted-foreground"
-											duration={1}
-										>
+										<ShimmerLabel className="text-sm text-muted-foreground">
 											Thinking...
-										</Shimmer>
+										</ShimmerLabel>
 									) : (
 										<MessagePartsRenderer
 											parts={msg.parts}
 											isLastAssistant={isLastAssistant}
-											isStreaming={isStreaming}
+											isStreaming={shouldAnimateStreaming}
 											workspaceId={workspaceId}
 											onAnswer={onAnswer}
 										/>
@@ -164,12 +169,31 @@ export function MessageList({
 						);
 					})
 				)}
+				{interruptedMessage && interruptedMessage.parts.length > 0 && (
+					<Message key={interruptedMessage.id} from="assistant">
+						<MessageContent>
+							<MessagePartsRenderer
+								parts={interruptedMessage.parts}
+								isLastAssistant={false}
+								isStreaming={false}
+								workspaceId={workspaceId}
+								onAnswer={onAnswer}
+							/>
+							<div className="flex items-center gap-2 text-xs text-muted-foreground">
+								<span className="rounded border border-border bg-muted px-1.5 py-0.5 font-medium uppercase tracking-wide">
+									Interrupted
+								</span>
+								<span>Response stopped</span>
+							</div>
+						</MessageContent>
+					</Message>
+				)}
 				{isThinking && messages[messages.length - 1]?.role === "user" && (
 					<Message from="assistant">
 						<MessageContent>
-							<Shimmer className="text-sm text-muted-foreground" duration={1}>
+							<ShimmerLabel className="text-sm text-muted-foreground">
 								Thinking...
-							</Shimmer>
+							</ShimmerLabel>
 						</MessageContent>
 					</Message>
 				)}
