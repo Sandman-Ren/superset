@@ -4,11 +4,9 @@
 
 ### The Code Editor for AI Agents
 
-[![GitHub stars](https://img.shields.io/github/stars/superset-sh/superset?style=flat&logo=github)](https://github.com/superset-sh/superset/stargazers)
-[![GitHub release](https://img.shields.io/github/v/release/superset-sh/superset?style=flat&logo=github)](https://github.com/superset-sh/superset/releases)
-[![License](https://img.shields.io/github/license/superset-sh/superset?style=flat)](LICENSE.md)
-[![Twitter](https://img.shields.io/badge/@superset__sh-555?logo=x)](https://x.com/superset_sh)
-[![Discord](https://img.shields.io/badge/Discord-555?logo=discord)](https://discord.gg/cZeD9WYcV7)
+[![GitHub release](https://img.shields.io/github/v/release/Sandman-Ren/superset?style=flat&logo=github)](https://github.com/Sandman-Ren/superset/releases)
+[![License](https://img.shields.io/github/license/Sandman-Ren/superset?style=flat)](LICENSE.md)
+[![Upstream](https://img.shields.io/badge/upstream-superset--sh%2Fsuperset-blue?logo=github)](https://github.com/superset-sh/superset)
 
 <br />
 
@@ -17,10 +15,13 @@ Works with any CLI agent. Built for local worktree-based development.
 
 <br />
 
-[**Download for macOS**](https://github.com/superset-sh/superset/releases/latest) &nbsp;&bull;&nbsp; [Documentation](https://docs.superset.sh) &nbsp;&bull;&nbsp; [Changelog](https://github.com/superset-sh/superset/releases) &nbsp;&bull;&nbsp; [Discord](https://discord.gg/cZeD9WYcV7)
+[**Download for Windows**](https://github.com/Sandman-Ren/superset/releases/latest) &nbsp;&bull;&nbsp; [**Download for macOS**](https://github.com/Sandman-Ren/superset/releases/latest) &nbsp;&bull;&nbsp; [**Download for Linux**](https://github.com/Sandman-Ren/superset/releases/latest) &nbsp;&bull;&nbsp; [Documentation](https://docs.superset.sh) &nbsp;&bull;&nbsp; [Changelog](https://github.com/Sandman-Ren/superset/releases)
 
 <br />
 
+> **Modified fork** — This is a modified version of [superset-sh/superset](https://github.com/superset-sh/superset) with Windows build support and other changes. This project is not affiliated with or endorsed by the original Superset team. See the [Modification Notice](#modification-notice) below.
+
+<br />
 
 </div>
 
@@ -70,17 +71,18 @@ If it runs in a terminal, it runs on Superset
 
 | Requirement | Details |
 |:------------|:--------|
-| **OS** | macOS (Windows/Linux untested) |
+| **OS** | Windows 10+ (x64), macOS, Linux |
 | **Runtime** | [Bun](https://bun.sh/) v1.0+ |
 | **Version Control** | Git 2.20+ |
 | **GitHub CLI** | [gh](https://cli.github.com/) |
 | **Caddy** | [caddy](https://caddyserver.com/docs/install) (for dev server) |
+| **Windows** | [Long paths enabled](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell) (required for building from source) |
 
 ## Getting Started
 
 ### Quick Start (Pre-built)
 
-**[Download Superset for macOS](https://github.com/superset-sh/superset/releases/latest)**
+**[Download from Releases](https://github.com/Sandman-Ren/superset/releases/latest)** — Available for Windows (.exe), macOS (.dmg), and Linux (.AppImage).
 
 ### Build from Source
 
@@ -90,7 +92,7 @@ If it runs in a terminal, it runs on Superset
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/superset-sh/superset.git
+git clone https://github.com/Sandman-Ren/superset.git
 cd superset
 ```
 
@@ -126,8 +128,32 @@ bun run dev
 
 ```bash
 bun run build
-open apps/desktop/release
+# Output: apps/desktop/release/
 ```
+
+</details>
+
+<details>
+<summary>Windows-specific build notes</summary>
+
+Windows builds require [long paths enabled](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell) (run as Administrator):
+
+```powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+  -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+
+Reboot after enabling, then build normally:
+
+```bash
+bun install --ignore-scripts
+cd apps/desktop
+bun run prebuild
+bun run build
+# Output: apps/desktop/release/Superset-<version>-x64.exe
+```
+
+Note: `bun install --ignore-scripts` is used because `electron-builder install-app-deps` has a known issue with `node-pty` on Windows when using Bun workspaces. The `prebuild` script handles native module preparation via `copy:native-modules`.
 
 </details>
 
@@ -229,7 +255,7 @@ This repo uses the published upstream `mastracode` and `@mastra/*` packages dire
 
 ## Contributing
 
-We welcome contributions! If you have a suggestion that would make Superset better:
+Contributions to this fork are welcome! If you have a suggestion:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -237,29 +263,31 @@ We welcome contributions! If you have a suggestion that would make Superset bett
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-You can also [open issues](https://github.com/superset-sh/superset/issues) for bugs or feature requests.
+For issues specific to this fork (e.g., Windows build), [open issues here](https://github.com/Sandman-Ren/superset/issues).
+For upstream issues, see [superset-sh/superset](https://github.com/superset-sh/superset/issues).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions and code of conduct.
 
-<a href="https://github.com/superset-sh/superset/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=superset-sh/superset" />
-</a>
-
 ## Community
 
-Join the Superset community to get help, share feedback, and connect with other users:
+- **[Upstream Discord](https://discord.gg/cZeD9WYcV7)** — Chat with the upstream Superset team and community
+- **[Upstream Twitter](https://x.com/superset_sh)** — Follow for upstream updates and announcements
+- **[Fork Issues](https://github.com/Sandman-Ren/superset/issues)** — Report bugs specific to this fork
 
-- **[Discord](https://discord.gg/cZeD9WYcV7)** — Chat with the team and community
-- **[Twitter](https://x.com/superset_sh)** — Follow for updates and announcements
-- **[GitHub Issues](https://github.com/superset-sh/superset/issues)** — Report bugs and request features
-- **[GitHub Discussions](https://github.com/superset-sh/superset/discussions)** — Ask questions and share ideas
+## Modification Notice
 
-### Team
+This software is a modified version of [Superset](https://github.com/superset-sh/superset) by Superset, Inc.
 
-[![Avi Twitter](https://img.shields.io/badge/Avi-@avimakesrobots-555?logo=x)](https://x.com/avimakesrobots)
-[![Kiet Twitter](https://img.shields.io/badge/Kiet-@flyakiet-555?logo=x)](https://x.com/flyakiet)
-[![Satya Twitter](https://img.shields.io/badge/Satya-@saddle__paddle-555?logo=x)](https://x.com/saddle_paddle)
+Modifications include:
+- Windows build support (NSIS installer, native module handling, CI/CD)
+- Cross-platform runtime fixes (shell wrappers, auto-updater, teardown)
+- Auto-update feed pointing to this fork's releases
+- Cross-platform postinstall script
+
+This fork is not affiliated with, endorsed by, or sponsored by Superset, Inc. or the original Superset team. "Superset" is a trademark of Superset, Inc. and is used here solely to identify the upstream software from which this fork is derived.
 
 ## License
 
 Distributed under the Elastic License 2.0 (ELv2). See [LICENSE.md](LICENSE.md) for more information.
+
+Original copyright: Copyright 2025-2026 Superset, Inc.

@@ -29,8 +29,8 @@ const IS_AUTO_UPDATE_PLATFORM =
 // - Stable: fetches from /releases/latest/download/ (latest non-prerelease)
 // - Canary: fetches from /releases/download/desktop-canary/ (rolling canary tag)
 const UPDATE_FEED_URL = IS_PRERELEASE
-	? "https://github.com/superset-sh/superset/releases/download/desktop-canary"
-	: "https://github.com/superset-sh/superset/releases/latest/download";
+	? "https://github.com/Sandman-Ren/superset/releases/download/desktop-canary"
+	: "https://github.com/Sandman-Ren/superset/releases/latest/download";
 
 export interface AutoUpdateStatusEvent {
 	status: AutoUpdateStatus;

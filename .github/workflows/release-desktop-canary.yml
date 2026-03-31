@@ -112,6 +112,17 @@ jobs:
               echo "Created canary copy: Superset-Canary-${arch}.AppImage"
             fi
           done
+          # Windows installer canary copies
+          for file in *.exe; do
+            if [[ -f "$file" ]]; then
+              arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.exe$/\1/')
+              if [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
+                arch="x64"
+              fi
+              cp "$file" "Superset-Canary-${arch}.exe"
+              echo "Created canary copy: Superset-Canary-${arch}.exe"
+            fi
+          done
           # Prerelease builds may request canary-linux.yml; keep latest-linux.yml as fallback.
           for file in *-linux.yml; do
             if [[ -f "$file" && "$file" != "canary-linux.yml" && "$file" != "latest-linux.yml" ]]; then
@@ -121,6 +132,10 @@ jobs:
               break
             fi
           done
+          # Windows update manifest (latest.yml is the default name electron-builder uses)
+          if [[ -f "latest.yml" ]]; then
+            echo "Windows update manifest (latest.yml) present"
+          fi
 
       - name: List artifacts
         run: |
