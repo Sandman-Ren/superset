@@ -83,8 +83,13 @@ const config: Configuration = {
 		"!**/.DS_Store",
 	],
 
-	// Rebuild native modules for Electron's Node.js version
-	npmRebuild: true,
+	// Rebuild native modules for Electron's Node.js version.
+	// On Windows with Bun workspaces, @electron/rebuild fails on node-pty because
+	// winpty.gyp's GetCommitHash.bat cannot be found (cmd.exe no longer searches
+	// CWD for executables by default). Use electron-builder install-app-deps with
+	// the --only flag for individual modules instead, or skip rebuild for modules
+	// that ship prebuilt binaries.
+	npmRebuild: process.platform !== "win32",
 
 	// macOS
 	mac: {

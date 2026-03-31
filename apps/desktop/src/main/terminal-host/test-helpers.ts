@@ -4,9 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 export function supportsLocalSocketBinding(): boolean {
-	if (process.platform === "win32") {
-		return false;
-	}
+	// Unix domain sockets are supported on Windows 10 1803+ and Windows 11.
+	// Let the actual socket probe determine support rather than skipping.
 
 	const probeDir = mkdtempSync(
 		join(realpathSync(tmpdir()), "superset-socket-probe-"),

@@ -9,6 +9,8 @@ type ExternalizedRuntimeModule = {
 	materialize: string[];
 	packagedCopies: PackagedNodeModuleCopy[];
 	specifier: string;
+	/** Restrict this module to specific platforms (e.g., ["darwin"]). Omit for all platforms. */
+	platforms?: NodeJS.Platform[];
 };
 
 function copyWholeModule(moduleName: string): PackagedNodeModuleCopy {
@@ -48,6 +50,7 @@ const externalizedRuntimeModules: ExternalizedRuntimeModule[] = [
 		materialize: ["@superset/macos-process-metrics"],
 		packagedCopies: [copyWholeModule("@superset/macos-process-metrics")],
 		asarUnpackGlobs: ["**/node_modules/@superset/macos-process-metrics/**/*"],
+		platforms: ["darwin"],
 	},
 	{
 		specifier: "@ast-grep/napi",
@@ -85,24 +88,41 @@ const packagedSupportModules = [
 	copyWholeModule("node-addon-api"),
 ];
 
+function forCurrentPlatform(
+	modules: ExternalizedRuntimeModule[],
+): ExternalizedRuntimeModule[] {
+	return modules.filter(
+		(m) => !m.platforms || m.platforms.includes(process.platform as NodeJS.Platform),
+	);
+}
+
+// Externalization tells Rollup to keep require() calls instead of bundling.
+// All modules must be externalized regardless of platform, because the source
+// code references them on all platforms (guarded by try/catch at runtime).
 export const mainExternalizedDependencies = [
 	...externalizedRuntimeModules.map((module) => module.specifier),
 	"pg-native",
 ];
 
 export const packagedNodeModuleCopies = [
-	...externalizedRuntimeModules.flatMap((module) => module.packagedCopies),
+	...forCurrentPlatform(externalizedRuntimeModules).flatMap(
+		(module) => module.packagedCopies,
+	),
 	...packagedSupportModules,
 ];
 
 export const packagedAsarUnpackGlobs = [
-	...externalizedRuntimeModules.flatMap((module) => module.asarUnpackGlobs),
+	...forCurrentPlatform(externalizedRuntimeModules).flatMap(
+		(module) => module.asarUnpackGlobs,
+	),
 	"**/node_modules/bindings/**/*",
 	"**/node_modules/file-uri-to-path/**/*",
 ];
 
 export const requiredMaterializedNodeModules = [
-	...externalizedRuntimeModules.flatMap((module) => module.materialize),
+	...forCurrentPlatform(externalizedRuntimeModules).flatMap(
+		(module) => module.materialize,
+	),
 	"bindings",
 	"file-uri-to-path",
 	"detect-libc",

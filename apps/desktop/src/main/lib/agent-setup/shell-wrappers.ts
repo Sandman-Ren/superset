@@ -335,6 +335,13 @@ export function getShellArgs(
 	if (["zsh", "sh", "ksh"].includes(shellName)) {
 		return ["-l"];
 	}
+	// Windows shells: cmd.exe starts interactive by default, PowerShell needs -NoExit
+	if (["cmd.exe", "cmd"].includes(shellName)) {
+		return [];
+	}
+	if (["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)) {
+		return ["-NoLogo"];
+	}
 	return [];
 }
 
@@ -357,6 +364,14 @@ export function getCommandShellArgs(
 	logModeDiagnostics(shellName);
 	const zshRc = path.join(paths.ZSH_DIR, ".zshrc");
 	const bashRcfile = path.join(paths.BASH_DIR, "rcfile");
+	// Windows shells use different command execution syntax
+	if (["cmd.exe", "cmd"].includes(shellName)) {
+		return ["/c", command];
+	}
+	if (["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)) {
+		return ["-NoLogo", "-Command", command];
+	}
+
 	const commandWithManagedPrelude = `${buildManagedCommandPrelude(shellName, paths.BIN_DIR)}\n${command}`;
 	if (shellName === "zsh" && fs.existsSync(zshRc)) {
 		return [

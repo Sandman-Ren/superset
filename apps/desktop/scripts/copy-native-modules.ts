@@ -23,8 +23,10 @@ import {
 	readFileSync,
 	realpathSync,
 	rmSync,
+	writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { satisfies } from "semver";
 import { requiredMaterializedNodeModules } from "../runtime-dependencies";
 
@@ -64,6 +66,29 @@ function findBunStoreFolderName(
 	return entries.find((entry) => entry.startsWith(modulePrefix)) ?? null;
 }
 
+/**
+ * Detect if a path is a symlink or an NTFS junction.
+ * Bun on Windows uses NTFS junctions instead of symlinks, and
+ * lstatSync().isSymbolicLink() returns false for junctions.
+ */
+function isSymlinkOrJunction(modulePath: string): boolean {
+	const stats = lstatSync(modulePath);
+	if (stats.isSymbolicLink()) return true;
+
+	// On Windows, Bun uses NTFS junctions which lstat reports as directories.
+	// Detect by comparing the resolved path against the original.
+	if (process.platform === "win32" && stats.isDirectory()) {
+		try {
+			const realPath = realpathSync(modulePath);
+			return resolve(realPath) !== resolve(modulePath);
+		} catch {
+			return false;
+		}
+	}
+
+	return false;
+}
+
 function copyModuleIfSymlink(
 	nodeModulesDir: string,
 	moduleName: string,
@@ -89,16 +114,16 @@ function copyModuleIfSymlink(
 		return false;
 	}
 
-	const stats = lstatSync(modulePath);
-
-	if (stats.isSymbolicLink()) {
-		// Resolve symlink to get real path
+	if (isSymlinkOrJunction(modulePath)) {
+		// Resolve symlink/junction to get real path
 		const realPath = realpathSync(modulePath);
-		console.log(`  ${moduleName}: symlink -> replacing with real files`);
+		console.log(
+			`  ${moduleName}: symlink/junction -> replacing with real files`,
+		);
 		console.log(`    Real path: ${realPath}`);
 
-		// Remove the symlink
-		rmSync(modulePath);
+		// Remove the symlink/junction
+		rmSync(modulePath, { recursive: process.platform === "win32" });
 
 		// Copy the actual files
 		cpSync(realPath, modulePath, { recursive: true });
@@ -241,14 +266,29 @@ function fetchNpmPackage(
 	console.log(`  ${packageName}: fetching from npm (${version})`);
 	try {
 		mkdirSync(destPath, { recursive: true });
-		execSync(
-			`curl -sL "${url}" | tar xz -C "${destPath}" --strip-components=1`,
-			{
-				stdio: "pipe",
-			},
+
+		// Download to a temp file first, then extract. This avoids shell pipe
+		// semantics which can be fragile across platforms (Windows cmd.exe vs bash).
+		// curl.exe and tar.exe ship with Windows 10+ and work identically to Unix.
+		const tempFile = join(
+			tmpdir(),
+			`npm-${barePackageName}-${version}.tgz`,
 		);
-		console.log(`    Extracted to: ${destPath}`);
-		return true;
+		try {
+			execSync(`curl -sLo "${tempFile}" "${url}"`, { stdio: "pipe" });
+			execSync(
+				`tar xzf "${tempFile}" -C "${destPath}" --strip-components=1`,
+				{ stdio: "pipe" },
+			);
+			console.log(`    Extracted to: ${destPath}`);
+			return true;
+		} finally {
+			try {
+				rmSync(tempFile);
+			} catch {
+				// Best effort cleanup
+			}
+		}
 	} catch (err) {
 		console.error(
 			`  [ERROR] Failed to fetch ${packageName}@${version}: ${err}`,
@@ -488,6 +528,54 @@ function prepareNativeModules() {
 	copyAstGrepPlatformPackages(nodeModulesDir);
 	copyParcelWatcherPlatformPackages(nodeModulesDir);
 	copyLibsqlDependencies(nodeModulesDir);
+
+	// On Windows, node-pty's winpty.gyp references GetCommitHash.bat via
+	// `cd shared && GetCommitHash.bat`, but the CWD during gyp configure is
+	// the node-pty root, not deps/winpty/src/. Create a shim at the expected
+	// location so @electron/rebuild can process the gyp file.
+	if (process.platform === "win32") {
+		console.log("\nPatching node-pty for Windows gyp build...");
+		const nodePtyPaths = [
+			join(nodeModulesDir, "node-pty", "shared"),
+			join(
+				getWorkspaceRootNodeModulesDir(nodeModulesDir),
+				".bun",
+			),
+		];
+
+		// Patch the app's node_modules copy
+		const shimDir = join(nodeModulesDir, "node-pty", "shared");
+		const shimPath = join(shimDir, "GetCommitHash.bat");
+		if (!existsSync(shimPath)) {
+			mkdirSync(shimDir, { recursive: true });
+			writeFileSync(shimPath, "@echo off\necho none\n(call )\n");
+			console.log("  Created GetCommitHash.bat shim in app node_modules");
+		}
+
+		// Patch the Bun store copy (where @electron/rebuild looks)
+		const bunStore = getWorkspaceRootNodeModulesDir(nodeModulesDir);
+		const bunNodePtyDirs = existsSync(join(bunStore, ".bun"))
+			? readdirSync(join(bunStore, ".bun")).filter((e) =>
+					e.startsWith("node-pty@"),
+				)
+			: [];
+		for (const entry of bunNodePtyDirs) {
+			const storeShimDir = join(
+				bunStore,
+				".bun",
+				entry,
+				"node_modules",
+				"node-pty",
+				"shared",
+			);
+			const storeShimPath = join(storeShimDir, "GetCommitHash.bat");
+			if (!existsSync(storeShimPath)) {
+				mkdirSync(storeShimDir, { recursive: true });
+				writeFileSync(storeShimPath, "@echo off\necho none\n(call )\n");
+				console.log("  Created GetCommitHash.bat shim in Bun store");
+			}
+		}
+	}
 
 	console.log("\nDone!");
 }
