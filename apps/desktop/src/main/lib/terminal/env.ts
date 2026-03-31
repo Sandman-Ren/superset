@@ -291,11 +291,15 @@ const ALLOWED_ENV_VARS = new Set([
 	"LOCALAPPDATA",
 	"PROGRAMFILES",
 	"PROGRAMFILES(X86)",
+	"PROGRAMDATA",
+	"SYSTEMDRIVE",
 	"SYSTEMROOT",
 	"WINDIR",
 	"TEMP",
 	"TMP",
 	"PATHEXT", // Required for command resolution on Windows
+	"NUMBER_OF_PROCESSORS", // Used by MSBuild for parallel builds
+	"PROCESSOR_ARCHITECTURE", // Used by native toolchains (x86/AMD64/ARM64)
 
 	// SSL/TLS configuration (custom certs, not secrets)
 	"SSL_CERT_FILE",

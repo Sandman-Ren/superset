@@ -43,7 +43,10 @@ const externalizedRuntimeModules: ExternalizedRuntimeModule[] = [
 		specifier: "node-pty",
 		materialize: ["node-pty"],
 		packagedCopies: [copyWholeModule("node-pty")],
-		asarUnpackGlobs: ["**/node_modules/node-pty/**/*"],
+		asarUnpackGlobs: [
+			"**/node_modules/node-pty/**/*",
+			"**/node_modules/@lydell/node-pty*/**/*",
+		],
 	},
 	{
 		specifier: "@superset/macos-process-metrics",

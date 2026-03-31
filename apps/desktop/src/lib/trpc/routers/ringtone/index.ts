@@ -1,9 +1,9 @@
 import type { ChildProcess } from "node:child_process";
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { TRPCError } from "@trpc/server";
-import type { BrowserWindow, OpenDialogOptions } from "electron";
-import { dialog } from "electron";
+import type { OpenDialogOptions } from "electron";
+import { BrowserWindow, dialog } from "electron";
 import {
 	getCustomRingtoneInfo,
 	getCustomRingtonePath,
@@ -40,6 +40,19 @@ function stopCurrentSound(): void {
 		}
 		currentSession = null;
 	}
+
+	// Stop any renderer-side audio on Windows
+	if (process.platform === "win32") {
+		const windows = BrowserWindow.getAllWindows();
+		if (windows.length > 0 && windows[0].webContents) {
+			windows[0].webContents.executeJavaScript(`
+				if (window.__supersetPreviewAudio) {
+					window.__supersetPreviewAudio.pause();
+					window.__supersetPreviewAudio = null;
+				}
+			`).catch(() => {});
+		}
+	}
 }
 
 /**
@@ -67,15 +80,31 @@ function playSoundFile(soundPath: string): void {
 			}
 		});
 	} else if (process.platform === "win32") {
-		currentSession.process = execFile(
-			"powershell",
-			["-c", `(New-Object Media.SoundPlayer '${soundPath}').PlaySync()`],
-			() => {
-				if (currentSession?.id === sessionId) {
-					currentSession = null;
-				}
-			},
-		);
+		// Play via Chromium's audio engine in the renderer for reliable playback.
+		const windows = BrowserWindow.getAllWindows();
+		if (windows.length > 0 && windows[0].webContents) {
+			try {
+				const buf = readFileSync(soundPath);
+				const ext = soundPath.endsWith(".wav") ? "wav" : "mpeg";
+				const dataUrl = `data:audio/${ext};base64,${buf.toString("base64")}`;
+				windows[0].webContents.executeJavaScript(`
+					(function() {
+						if (window.__supersetPreviewAudio) {
+							window.__supersetPreviewAudio.pause();
+							window.__supersetPreviewAudio = null;
+						}
+						const audio = new Audio(${JSON.stringify(dataUrl)});
+						window.__supersetPreviewAudio = audio;
+						audio.play().catch(() => {});
+						audio.onended = () => {
+							if (window.__supersetPreviewAudio === audio) {
+								window.__supersetPreviewAudio = null;
+							}
+						};
+					})()
+				`).catch(() => {});
+			} catch {}
+		}
 	} else {
 		// Linux - try common audio players with race-safe fallback
 		currentSession.process = execFile("paplay", [soundPath], (error) => {

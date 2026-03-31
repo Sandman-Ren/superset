@@ -529,51 +529,61 @@ function prepareNativeModules() {
 	copyParcelWatcherPlatformPackages(nodeModulesDir);
 	copyLibsqlDependencies(nodeModulesDir);
 
-	// On Windows, node-pty's winpty.gyp references GetCommitHash.bat via
-	// `cd shared && GetCommitHash.bat`, but the CWD during gyp configure is
-	// the node-pty root, not deps/winpty/src/. Create a shim at the expected
-	// location so @electron/rebuild can process the gyp file.
-	if (process.platform === "win32") {
-		console.log("\nPatching node-pty for Windows gyp build...");
-		const nodePtyPaths = [
-			join(nodeModulesDir, "node-pty", "shared"),
-			join(
-				getWorkspaceRootNodeModulesDir(nodeModulesDir),
-				".bun",
-			),
-		];
+	// @lydell/node-pty uses optionalDependencies for platform-specific native
+	// binaries. Bun keeps them in .bun/ so they're not resolvable from the
+	// desktop workspace's node_modules. Materialize the correct platform binary.
+	const OPTIONAL_PLATFORM_MODULES = [
+		...(process.platform === "win32"
+			? ["@lydell/node-pty-win32-x64"]
+			: []),
+		...(process.platform === "darwin" && process.arch === "arm64"
+			? ["@lydell/node-pty-darwin-arm64"]
+			: []),
+		...(process.platform === "darwin" && process.arch === "x64"
+			? ["@lydell/node-pty-darwin-x64"]
+			: []),
+		...(process.platform === "linux" && process.arch === "x64"
+			? ["@lydell/node-pty-linux-x64"]
+			: []),
+		...(process.platform === "linux" && process.arch === "arm64"
+			? ["@lydell/node-pty-linux-arm64"]
+			: []),
+	];
 
-		// Patch the app's node_modules copy
-		const shimDir = join(nodeModulesDir, "node-pty", "shared");
-		const shimPath = join(shimDir, "GetCommitHash.bat");
-		if (!existsSync(shimPath)) {
-			mkdirSync(shimDir, { recursive: true });
-			writeFileSync(shimPath, "@echo off\necho none\n(call )\n");
-			console.log("  Created GetCommitHash.bat shim in app node_modules");
-		}
-
-		// Patch the Bun store copy (where @electron/rebuild looks)
-		const bunStore = getWorkspaceRootNodeModulesDir(nodeModulesDir);
-		const bunNodePtyDirs = existsSync(join(bunStore, ".bun"))
-			? readdirSync(join(bunStore, ".bun")).filter((e) =>
-					e.startsWith("node-pty@"),
-				)
-			: [];
-		for (const entry of bunNodePtyDirs) {
-			const storeShimDir = join(
-				bunStore,
-				".bun",
-				entry,
-				"node_modules",
-				"node-pty",
-				"shared",
-			);
-			const storeShimPath = join(storeShimDir, "GetCommitHash.bat");
-			if (!existsSync(storeShimPath)) {
-				mkdirSync(storeShimDir, { recursive: true });
-				writeFileSync(storeShimPath, "@echo off\necho none\n(call )\n");
-				console.log("  Created GetCommitHash.bat shim in Bun store");
+	if (OPTIONAL_PLATFORM_MODULES.length > 0) {
+		console.log("\nPreparing @lydell/node-pty platform modules...");
+		const bunStoreDir = getBunStoreDir(nodeModulesDir);
+		for (const moduleName of OPTIONAL_PLATFORM_MODULES) {
+			const destPath = join(nodeModulesDir, moduleName);
+			if (existsSync(destPath)) {
+				copyModuleIfSymlink(nodeModulesDir, moduleName, false);
+				continue;
 			}
+			const bunPrefix = moduleName.replace("/", "+");
+			const bunStoreEntries = existsSync(bunStoreDir)
+				? readdirSync(bunStoreDir).filter((e) =>
+						e.startsWith(`${bunPrefix}@`),
+					)
+				: [];
+			if (bunStoreEntries.length === 0) {
+				console.warn(`  ${moduleName}: not found in Bun store (skipping)`);
+				continue;
+			}
+			const sourcePath = join(
+				bunStoreDir,
+				bunStoreEntries.sort().reverse()[0],
+				"node_modules",
+				moduleName,
+			);
+			if (!existsSync(sourcePath)) {
+				console.warn(
+					`  ${moduleName}: Bun store path missing (${sourcePath})`,
+				);
+				continue;
+			}
+			console.log(`  ${moduleName}: copying from Bun store`);
+			mkdirSync(dirname(destPath), { recursive: true });
+			cpSync(sourcePath, destPath, { recursive: true });
 		}
 	}
 

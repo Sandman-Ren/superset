@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { settings } from "@superset/local-db";
+import { BrowserWindow } from "electron";
 import {
 	CUSTOM_RINGTONE_ID,
 	DEFAULT_RINGTONE_ID,
@@ -63,10 +64,19 @@ function playSoundFile(soundPath: string): void {
 	if (process.platform === "darwin") {
 		execFile("afplay", [soundPath]);
 	} else if (process.platform === "win32") {
-		execFile("powershell", [
-			"-c",
-			`(New-Object Media.SoundPlayer '${soundPath}').PlaySync()`,
-		]);
+		// Play via Chromium's audio engine in the renderer for reliable playback.
+		// PowerShell-based approaches are unreliable on Windows 11.
+		const windows = BrowserWindow.getAllWindows();
+		if (windows.length > 0 && windows[0].webContents) {
+			try {
+				const buf = readFileSync(soundPath);
+				const ext = soundPath.endsWith(".wav") ? "wav" : "mpeg";
+				const dataUrl = `data:audio/${ext};base64,${buf.toString("base64")}`;
+				windows[0].webContents.executeJavaScript(
+					`new Audio(${JSON.stringify(dataUrl)}).play().catch(()=>{})`,
+				).catch(() => {});
+			} catch {}
+		}
 	} else {
 		// Linux - try common audio players
 		execFile("paplay", [soundPath], (error) => {

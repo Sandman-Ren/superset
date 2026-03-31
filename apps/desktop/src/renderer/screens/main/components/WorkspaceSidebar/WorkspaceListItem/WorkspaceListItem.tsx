@@ -16,6 +16,7 @@ import { useBranchSyncInvalidation } from "renderer/screens/main/hooks/useBranch
 import { useGitChangesStatus } from "renderer/screens/main/hooks/useGitChangesStatus";
 import { useWorkspaceRename } from "renderer/screens/main/hooks/useWorkspaceRename";
 import { useActiveDragItemStore } from "renderer/stores/active-drag-item";
+import { useHotkeysStore } from "renderer/stores/hotkeys";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { extractPaneIdsFromLayout } from "renderer/stores/tabs/utils";
 import { useWorkspaceSelectionStore } from "renderer/stores/workspace-selection";
@@ -67,6 +68,7 @@ export function WorkspaceListItem({
 	const isBranchWorkspace = type === "branch";
 	const navigate = useNavigate();
 	const matchRoute = useMatchRoute();
+	const platform = useHotkeysStore((state) => state.platform);
 	const [hasHovered, setHasHovered] = useState(false);
 	const rename = useWorkspaceRename(id, name, branch);
 	const workspaceStatus = useTabsStore((state) => {
@@ -407,7 +409,7 @@ export function WorkspaceListItem({
 									{shortcutIndex !== undefined &&
 										shortcutIndex < MAX_KEYBOARD_SHORTCUT_INDEX && (
 											<span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">
-												⌘{shortcutIndex + 1}
+												{platform === "darwin" ? "⌘" : "Ctrl+Shift+"}{shortcutIndex + 1}
 											</span>
 										)}
 									{!isBranchWorkspace && (

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import nodePath from "node:path";
 import type { ExternalApp } from "@superset/local-db";
 
@@ -82,12 +83,151 @@ const LINUX_CLI_CANDIDATES: Partial<Record<ExternalApp, string[]>> = {
 	pycharm: ["pycharm", "pycharm-professional", "pycharm-community"],
 };
 
+// ---------------------------------------------------------------------------
+// Windows app resolution
+// ---------------------------------------------------------------------------
+
+type WindowsAppConfig = {
+	cli?: string;
+	exeNames?: string[];
+	installDir?: string;
+	jetbrainsExe?: string;
+	args?: (targetPath: string) => string[];
+};
+
+const WINDOWS_APP_CONFIG: Record<ExternalApp, WindowsAppConfig> = {
+	finder: {},
+	vscode: { cli: "code", exeNames: ["Code.exe"], installDir: "Microsoft VS Code" },
+	"vscode-insiders": { cli: "code-insiders", exeNames: ["Code - Insiders.exe"], installDir: "Microsoft VS Code Insiders" },
+	cursor: { cli: "cursor", exeNames: ["Cursor.exe"], installDir: "Cursor" },
+	antigravity: { cli: "antigravity" },
+	windsurf: { cli: "windsurf", exeNames: ["Windsurf.exe"], installDir: "Windsurf" },
+	zed: { cli: "zed" },
+	xcode: {},
+	iterm: {},
+	warp: { cli: "warp-terminal" },
+	terminal: {
+		cli: "wt",
+		exeNames: ["wt.exe", "WindowsTerminal.exe"],
+		args: (target) => ["-d", target],
+	},
+	ghostty: { cli: "ghostty" },
+	sublime: { cli: "subl", exeNames: ["subl.exe", "sublime_text.exe"], installDir: "Sublime Text" },
+	intellij: { jetbrainsExe: "idea64.exe" },
+	webstorm: { cli: "webstorm", jetbrainsExe: "webstorm64.exe" },
+	pycharm: { jetbrainsExe: "pycharm64.exe" },
+	phpstorm: { cli: "phpstorm", jetbrainsExe: "phpstorm64.exe" },
+	rubymine: { cli: "rubymine", jetbrainsExe: "rubymine64.exe" },
+	goland: { cli: "goland", jetbrainsExe: "goland64.exe" },
+	clion: { cli: "clion", jetbrainsExe: "clion64.exe" },
+	rider: { cli: "rider", jetbrainsExe: "rider64.exe" },
+	datagrip: { cli: "datagrip", jetbrainsExe: "datagrip64.exe" },
+	appcode: {},
+	fleet: { cli: "fleet" },
+	rustrover: { cli: "rustrover", jetbrainsExe: "rustrover64.exe" },
+	"android-studio": { cli: "studio", exeNames: ["studio64.exe"], installDir: "Android Studio" },
+};
+
+function getWindowsProgramRoots(): string[] {
+	const roots: string[] = [];
+	const pf = process.env.ProgramFiles;
+	const pfx86 = process.env["ProgramFiles(x86)"];
+	const localAppData = process.env.LOCALAPPDATA;
+	if (pf) roots.push(pf);
+	if (pfx86) roots.push(pfx86);
+	if (localAppData) {
+		roots.push(nodePath.join(localAppData, "Programs"));
+		roots.push(localAppData);
+	}
+	return roots;
+}
+
+function findExistingPath(...candidates: string[]): string | null {
+	for (const p of candidates) {
+		if (fs.existsSync(p)) return p;
+	}
+	return null;
+}
+
+function findJetBrainsExe(exeName: string): string | null {
+	const roots = getWindowsProgramRoots();
+	// Standard install: C:\Program Files\JetBrains\<Product>\bin\<exe>
+	for (const root of roots) {
+		const jbDir = nodePath.join(root, "JetBrains");
+		if (!fs.existsSync(jbDir)) continue;
+		try {
+			for (const entry of fs.readdirSync(jbDir)) {
+				const candidate = nodePath.join(jbDir, entry, "bin", exeName);
+				if (fs.existsSync(candidate)) return candidate;
+			}
+		} catch {}
+	}
+	// Toolbox: ~/AppData/Local/JetBrains/Toolbox/apps/<product>/ch-0/*/bin/<exe>
+	const localAppData = process.env.LOCALAPPDATA;
+	if (localAppData) {
+		const toolboxApps = nodePath.join(localAppData, "JetBrains", "Toolbox", "apps");
+		if (fs.existsSync(toolboxApps)) {
+			try {
+				for (const product of fs.readdirSync(toolboxApps)) {
+					const chDir = nodePath.join(toolboxApps, product, "ch-0");
+					if (!fs.existsSync(chDir)) continue;
+					const versions = fs.readdirSync(chDir).sort().reverse();
+					for (const ver of versions) {
+						const candidate = nodePath.join(chDir, ver, "bin", exeName);
+						if (fs.existsSync(candidate)) return candidate;
+					}
+				}
+			} catch {}
+		}
+	}
+	return null;
+}
+
+function getWindowsAppCommand(
+	app: ExternalApp,
+	targetPath: string,
+): { command: string; args: string[] }[] | null {
+	const config = WINDOWS_APP_CONFIG[app];
+	if (!config || Object.keys(config).length === 0) return null;
+
+	const args = config.args ? config.args(targetPath) : [targetPath];
+
+	// Try full exe path first
+	if (config.exeNames && config.installDir) {
+		const roots = getWindowsProgramRoots();
+		for (const root of roots) {
+			for (const exe of config.exeNames) {
+				const fullPath = nodePath.join(root, config.installDir, exe);
+				if (fs.existsSync(fullPath)) {
+					return [{ command: fullPath, args }];
+				}
+			}
+		}
+	}
+
+	// JetBrains resolution
+	if (config.jetbrainsExe) {
+		const jbExe = findJetBrainsExe(config.jetbrainsExe);
+		if (jbExe) {
+			return [{ command: jbExe, args }];
+		}
+	}
+
+	// CLI fallback (relies on PATH)
+	if (config.cli) {
+		return [{ command: config.cli, args }];
+	}
+
+	return null;
+}
+
 /**
  * Get candidate commands to open a path in the specified app.
  * Returns an array of commands to try in order — for multi-edition apps (IntelliJ, PyCharm),
  * multiple candidates are returned so the caller can fall back if one isn't installed.
  *
  * macOS: Uses `open -b` (bundle ID) for multi-edition apps and `open -a` (app name) for others.
+ * Windows: Searches Program Files, LOCALAPPDATA, and JetBrains Toolbox for executables.
  * Linux: Uses direct CLI commands (e.g. `code`, `cursor`, `zed`).
  */
 export function getAppCommand(
@@ -95,6 +235,10 @@ export function getAppCommand(
 	targetPath: string,
 	platform: NodeJS.Platform = process.platform,
 ): { command: string; args: string[] }[] | null {
+	if (platform === "win32") {
+		return getWindowsAppCommand(app, targetPath);
+	}
+
 	if (platform === "darwin") {
 		const bundleIds = BUNDLE_ID_CANDIDATES[app];
 		if (bundleIds) {
@@ -149,9 +293,11 @@ const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
 function looksLikePath(str: string): boolean {
 	return (
 		str.includes("/") ||
+		str.includes("\\") ||
 		str.startsWith(".") ||
 		str.startsWith("~") ||
-		str.startsWith("/")
+		str.startsWith("/") ||
+		/^[A-Za-z]:/.test(str) // Windows drive letter
 	);
 }
 
