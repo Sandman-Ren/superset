@@ -23,7 +23,7 @@ jobs:
 
       - name: Add upstream remote
         run: |
-          git remote add upstream https://github.com/superset-ai/superset.git || true
+          git remote add upstream https://github.com/superset-sh/superset.git || true
           git fetch upstream main
 
       - name: Check for new upstream commits
