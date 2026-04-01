@@ -18,6 +18,7 @@ jobs:
       - name: Checkout fork
         uses: actions/checkout@v4
         with:
+          ref: dev
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -75,4 +76,4 @@ jobs:
           > Created automatically by the sync-upstream workflow.
           EOF
           )" \
-            --base main
+            --base dev
