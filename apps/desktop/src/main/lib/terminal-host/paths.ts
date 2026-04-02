@@ -4,7 +4,7 @@ import { SUPERSET_DIR_NAME } from "shared/constants";
 
 const IS_WINDOWS = process.platform === "win32";
 
-const SUPERSET_HOME_DIR = join(homedir(), SUPERSET_DIR_NAME);
+const SUPERSET_HOME_DIR = process.env.SUPERSET_HOME_DIR ?? join(homedir(), SUPERSET_DIR_NAME);
 
 const PIPE_SUFFIX = (
   process.env.USERNAME ?? process.env.USER ?? "user"
