@@ -32,7 +32,10 @@ export function useWorkspaceId(): string {
 	const ctx = useContext(WorkspaceIdContext);
 	if (ctx !== null) return ctx;
 	const { workspaceId } = useParams({ strict: false }) as {
-		workspaceId: string;
+		workspaceId: string | undefined;
 	};
+	if (!workspaceId) {
+		throw new Error("useWorkspaceId called outside a workspace route or WorkspaceIdProvider");
+	}
 	return workspaceId;
 }

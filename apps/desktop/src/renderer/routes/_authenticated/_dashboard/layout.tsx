@@ -6,7 +6,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useFeatureFlagEnabled } from "posthog-js/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { DashboardSidebar } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar";
 import { WorkspaceContent } from "renderer/routes/_authenticated/_dashboard/workspace/$workspaceId/WorkspaceContent";
@@ -45,12 +45,7 @@ function WorkspaceKeepAlive({ currentWorkspaceId }: { currentWorkspaceId: string
 		currentWorkspaceId ? [currentWorkspaceId] : [],
 	);
 
-	// Track previous workspace for display:none — use a ref so the effect
-	// doesn't need to re-run unnecessarily.
-	const prevWorkspaceIdRef = useRef(currentWorkspaceId);
-
 	useEffect(() => {
-		prevWorkspaceIdRef.current = currentWorkspaceId;
 		if (!currentWorkspaceId) return;
 
 		setAliveIds((prev) => {
