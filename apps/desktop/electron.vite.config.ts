@@ -114,7 +114,7 @@ export default defineConfig({
 				},
 				output: {
 					dir: resolve(devPath, "main"),
-					banner: 'delete globalThis.process.env.ELECTRON_RUN_AS_NODE;',
+					banner: "delete globalThis.process.env.ELECTRON_RUN_AS_NODE;",
 				},
 				external: ["electron", ...mainExternalizedDependencies],
 				plugins: [sentryPlugin].filter(Boolean),

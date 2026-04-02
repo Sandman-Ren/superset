@@ -19,7 +19,7 @@ process.env.SUPERSET_POSTINSTALL_RUNNING = "1";
 function run(cmd: string): void {
 	try {
 		execSync(cmd, { stdio: "inherit" });
-	} catch (error) {
+	} catch (_error) {
 		console.error(`postinstall: "${cmd}" failed`);
 		process.exit(1);
 	}

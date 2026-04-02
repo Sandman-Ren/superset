@@ -22,7 +22,6 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { createServer, type Server, Socket } from "node:net";
-import { join } from "node:path";
 import { TERMINAL_HOST_PATHS } from "../lib/terminal-host/paths";
 import {
 	type CancelCreateOrAttachRequest,

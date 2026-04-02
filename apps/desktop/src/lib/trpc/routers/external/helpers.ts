@@ -97,11 +97,23 @@ type WindowsAppConfig = {
 
 const WINDOWS_APP_CONFIG: Record<ExternalApp, WindowsAppConfig> = {
 	finder: {},
-	vscode: { cli: "code", exeNames: ["Code.exe"], installDir: "Microsoft VS Code" },
-	"vscode-insiders": { cli: "code-insiders", exeNames: ["Code - Insiders.exe"], installDir: "Microsoft VS Code Insiders" },
+	vscode: {
+		cli: "code",
+		exeNames: ["Code.exe"],
+		installDir: "Microsoft VS Code",
+	},
+	"vscode-insiders": {
+		cli: "code-insiders",
+		exeNames: ["Code - Insiders.exe"],
+		installDir: "Microsoft VS Code Insiders",
+	},
 	cursor: { cli: "cursor", exeNames: ["Cursor.exe"], installDir: "Cursor" },
 	antigravity: { cli: "antigravity" },
-	windsurf: { cli: "windsurf", exeNames: ["Windsurf.exe"], installDir: "Windsurf" },
+	windsurf: {
+		cli: "windsurf",
+		exeNames: ["Windsurf.exe"],
+		installDir: "Windsurf",
+	},
 	zed: { cli: "zed" },
 	xcode: {},
 	iterm: {},
@@ -112,7 +124,11 @@ const WINDOWS_APP_CONFIG: Record<ExternalApp, WindowsAppConfig> = {
 		args: (target) => ["-d", target],
 	},
 	ghostty: { cli: "ghostty" },
-	sublime: { cli: "subl", exeNames: ["subl.exe", "sublime_text.exe"], installDir: "Sublime Text" },
+	sublime: {
+		cli: "subl",
+		exeNames: ["subl.exe", "sublime_text.exe"],
+		installDir: "Sublime Text",
+	},
 	intellij: { jetbrainsExe: "idea64.exe" },
 	webstorm: { cli: "webstorm", jetbrainsExe: "webstorm64.exe" },
 	pycharm: { jetbrainsExe: "pycharm64.exe" },
@@ -125,7 +141,11 @@ const WINDOWS_APP_CONFIG: Record<ExternalApp, WindowsAppConfig> = {
 	appcode: {},
 	fleet: { cli: "fleet" },
 	rustrover: { cli: "rustrover", jetbrainsExe: "rustrover64.exe" },
-	"android-studio": { cli: "studio", exeNames: ["studio64.exe"], installDir: "Android Studio" },
+	"android-studio": {
+		cli: "studio",
+		exeNames: ["studio64.exe"],
+		installDir: "Android Studio",
+	},
 };
 
 function getWindowsProgramRoots(): string[] {
@@ -142,7 +162,7 @@ function getWindowsProgramRoots(): string[] {
 	return roots;
 }
 
-function findExistingPath(...candidates: string[]): string | null {
+function _findExistingPath(...candidates: string[]): string | null {
 	for (const p of candidates) {
 		if (fs.existsSync(p)) return p;
 	}
@@ -165,7 +185,12 @@ function findJetBrainsExe(exeName: string): string | null {
 	// Toolbox: ~/AppData/Local/JetBrains/Toolbox/apps/<product>/ch-0/*/bin/<exe>
 	const localAppData = process.env.LOCALAPPDATA;
 	if (localAppData) {
-		const toolboxApps = nodePath.join(localAppData, "JetBrains", "Toolbox", "apps");
+		const toolboxApps = nodePath.join(
+			localAppData,
+			"JetBrains",
+			"Toolbox",
+			"apps",
+		);
 		if (fs.existsSync(toolboxApps)) {
 			try {
 				for (const product of fs.readdirSync(toolboxApps)) {
