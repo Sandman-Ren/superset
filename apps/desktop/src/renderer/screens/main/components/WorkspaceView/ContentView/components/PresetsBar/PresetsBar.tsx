@@ -13,8 +13,9 @@ import {
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { HiMiniCog6Tooth, HiMiniCommandLine } from "react-icons/hi2";
 import { LuCirclePlus, LuPin } from "react-icons/lu";
 import {
@@ -124,7 +125,7 @@ function getTargetIndexForPinnedReorder({
 }
 
 export function PresetsBar() {
-	const { workspaceId } = useParams({ strict: false });
+	const workspaceId = useWorkspaceId();
 	const navigate = useNavigate();
 	const isDark = useIsDarkTheme();
 	const utils = electronTrpc.useUtils();

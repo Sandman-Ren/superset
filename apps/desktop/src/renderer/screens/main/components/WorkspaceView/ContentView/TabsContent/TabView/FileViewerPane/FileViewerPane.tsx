@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@superset/ui/alert";
 import { Button } from "@superset/ui/button";
-import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import type { MosaicBranch } from "react-mosaic-component";
 import type { MarkdownEditorAdapter } from "renderer/components/MarkdownRenderer";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -127,7 +127,7 @@ export function FileViewerPane({
 	onMoveToTab,
 	onMoveToNewTab,
 }: FileViewerPaneProps) {
-	const { workspaceId } = useParams({ strict: false });
+	const workspaceId = useWorkspaceId();
 	const normalizedWorkspaceId = workspaceId ?? worktreePath;
 	const fileViewer = useTabsStore((s) => s.panes[paneId]?.fileViewer);
 	const isFocused = useTabsStore((s) => s.focusedPaneIds[tabId] === paneId);

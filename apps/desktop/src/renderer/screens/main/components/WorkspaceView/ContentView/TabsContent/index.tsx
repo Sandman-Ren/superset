@@ -1,6 +1,6 @@
 import type { ExternalApp } from "@superset/local-db";
-import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { resolveActiveTabIdForWorkspace } from "renderer/stores/tabs/utils";
 import { EmptyTabView } from "./EmptyTabView";
@@ -17,7 +17,7 @@ export function TabsContent({
 	onOpenInApp,
 	onOpenQuickOpen,
 }: TabsContentProps) {
-	const { workspaceId: activeWorkspaceId } = useParams({ strict: false });
+	const activeWorkspaceId = useWorkspaceId();
 	const allTabs = useTabsStore((s) => s.tabs);
 	const activeTabIds = useTabsStore((s) => s.activeTabIds);
 	const tabHistoryStacks = useTabsStore((s) => s.tabHistoryStacks);

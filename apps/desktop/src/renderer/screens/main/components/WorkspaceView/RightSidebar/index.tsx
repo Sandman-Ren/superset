@@ -1,7 +1,7 @@
 import { Button } from "@superset/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { useParams } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import {
 	LuExpand,
 	LuFile,
@@ -72,7 +72,7 @@ function TabButton({
 }
 
 export function RightSidebar() {
-	const { workspaceId } = useParams({ strict: false });
+	const workspaceId = useWorkspaceId();
 	const { data: workspace } = electronTrpc.workspaces.get.useQuery(
 		{ id: workspaceId ?? "" },
 		{ enabled: !!workspaceId },
