@@ -26,9 +26,9 @@ import {
 import { connect, type Socket } from "node:net";
 import { join } from "node:path";
 import { app } from "electron";
-import { TERMINAL_HOST_PATHS } from "./paths";
 import { throwIfAborted } from "../terminal/abort";
 import { TerminalAttachCanceledError } from "../terminal/errors";
+import { TERMINAL_HOST_PATHS } from "./paths";
 import {
 	type CancelCreateOrAttachRequest,
 	type ClearScrollbackRequest,

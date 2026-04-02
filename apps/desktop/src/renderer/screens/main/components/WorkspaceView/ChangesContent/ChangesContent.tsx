@@ -1,5 +1,5 @@
-import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useGitChangesStatus } from "renderer/screens/main/hooks/useGitChangesStatus";
 import {
 	RightSidebarTab,

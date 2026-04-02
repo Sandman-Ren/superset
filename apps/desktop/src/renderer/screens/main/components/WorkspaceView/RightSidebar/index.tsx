@@ -1,7 +1,6 @@
 import { Button } from "@superset/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { useCallback } from "react";
-import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import {
 	LuExpand,
 	LuFile,
@@ -10,6 +9,7 @@ import {
 	LuX,
 } from "react-icons/lu";
 import { HotkeyTooltipContent } from "renderer/components/HotkeyTooltipContent";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	RightSidebarTab,

@@ -12,8 +12,8 @@ import {
 	ContextMenuTrigger,
 } from "@superset/ui/context-menu";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { LuFile, LuFolder } from "react-icons/lu";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWorkspaceFileEvents } from "renderer/screens/main/components/WorkspaceView/hooks/useWorkspaceFileEvents";
 import { useTabsStore } from "renderer/stores/tabs/store";

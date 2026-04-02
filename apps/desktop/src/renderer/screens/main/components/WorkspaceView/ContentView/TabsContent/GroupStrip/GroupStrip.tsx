@@ -10,8 +10,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { usePresets } from "renderer/react-query/presets";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { requestTabClose } from "renderer/stores/editor-state/editorCoordinator";
