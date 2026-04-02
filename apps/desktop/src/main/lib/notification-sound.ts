@@ -72,9 +72,11 @@ function playSoundFile(soundPath: string): void {
 				const buf = readFileSync(soundPath);
 				const ext = soundPath.endsWith(".wav") ? "wav" : "mpeg";
 				const dataUrl = `data:audio/${ext};base64,${buf.toString("base64")}`;
-				windows[0].webContents.executeJavaScript(
-					`new Audio(${JSON.stringify(dataUrl)}).play().catch(()=>{})`,
-				).catch(() => {});
+				windows[0].webContents
+					.executeJavaScript(
+						`new Audio(${JSON.stringify(dataUrl)}).play().catch(()=>{})`,
+					)
+					.catch(() => {});
 			} catch {}
 		}
 	} else {

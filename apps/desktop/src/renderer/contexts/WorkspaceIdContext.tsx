@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react";
 import { useParams } from "@tanstack/react-router";
+import { createContext, useContext } from "react";
 
 /**
  * Context that provides a workspace ID independently of the URL route params.
@@ -30,10 +30,10 @@ export function WorkspaceIdProvider({
  */
 export function useWorkspaceId(): string {
 	const ctx = useContext(WorkspaceIdContext);
-	if (ctx !== null) return ctx;
 	const { workspaceId } = useParams({ strict: false }) as {
 		workspaceId: string | undefined;
 	};
+	if (ctx !== null) return ctx;
 	if (!workspaceId) {
 		throw new Error(
 			"useWorkspaceId called outside a workspace route or WorkspaceIdProvider",

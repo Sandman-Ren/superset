@@ -342,7 +342,9 @@ export function getShellArgs(
 	if (["cmd.exe", "cmd"].includes(shellName)) {
 		return [];
 	}
-	if (["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)) {
+	if (
+		["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)
+	) {
 		return ["-NoLogo"];
 	}
 	return [];
@@ -371,7 +373,9 @@ export function getCommandShellArgs(
 	if (["cmd.exe", "cmd"].includes(shellName)) {
 		return ["/c", command];
 	}
-	if (["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)) {
+	if (
+		["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)
+	) {
 		return ["-NoLogo", "-Command", command];
 	}
 

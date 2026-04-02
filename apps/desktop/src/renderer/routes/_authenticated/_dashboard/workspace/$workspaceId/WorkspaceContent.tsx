@@ -65,7 +65,10 @@ interface WorkspaceContentProps {
  * Accepts workspaceId as a prop (not from route params) so it works outside the
  * route context when kept alive.
  */
-export function WorkspaceContent({ workspaceId, isActive }: WorkspaceContentProps) {
+export function WorkspaceContent({
+	workspaceId,
+	isActive,
+}: WorkspaceContentProps) {
 	const { data: workspace } = electronTrpc.workspaces.get.useQuery({
 		id: workspaceId,
 	});
@@ -187,12 +190,10 @@ export function WorkspaceContent({ workspaceId, isActive }: WorkspaceContentProp
 		hotkeyOptions,
 		[workspaceId, reopenClosedTab, addChatTab],
 	);
-	useAppHotkey(
-		"NEW_BROWSER",
-		() => addBrowserTab(workspaceId),
-		hotkeyOptions,
-		[workspaceId, addBrowserTab],
-	);
+	useAppHotkey("NEW_BROWSER", () => addBrowserTab(workspaceId), hotkeyOptions, [
+		workspaceId,
+		addBrowserTab,
+	]);
 	usePresetHotkeys(openTabWithPreset, hotkeyOptions);
 
 	useAppHotkey(
@@ -283,15 +284,33 @@ export function WorkspaceContent({ workspaceId, isActive }: WorkspaceContentProp
 		[tabs, workspaceId, setActiveTab],
 	);
 
-	useAppHotkey("JUMP_TO_TAB_1", () => switchToTab(0), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_2", () => switchToTab(1), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_3", () => switchToTab(2), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_4", () => switchToTab(3), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_5", () => switchToTab(4), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_6", () => switchToTab(5), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_7", () => switchToTab(6), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_8", () => switchToTab(7), hotkeyOptions, [switchToTab]);
-	useAppHotkey("JUMP_TO_TAB_9", () => switchToTab(8), hotkeyOptions, [switchToTab]);
+	useAppHotkey("JUMP_TO_TAB_1", () => switchToTab(0), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_2", () => switchToTab(1), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_3", () => switchToTab(2), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_4", () => switchToTab(3), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_5", () => switchToTab(4), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_6", () => switchToTab(5), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_7", () => switchToTab(6), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_8", () => switchToTab(7), hotkeyOptions, [
+		switchToTab,
+	]);
+	useAppHotkey("JUMP_TO_TAB_9", () => switchToTab(8), hotkeyOptions, [
+		switchToTab,
+	]);
 
 	useAppHotkey(
 		"PREV_PANE",
@@ -344,7 +363,9 @@ export function WorkspaceContent({ workspaceId, isActive }: WorkspaceContentProp
 			});
 		}
 	}, [workspace?.worktreePath, resolvedDefaultApp, mutateOpenInApp, projectId]);
-	useAppHotkey("OPEN_IN_APP", handleOpenInApp, hotkeyOptions, [handleOpenInApp]);
+	useAppHotkey("OPEN_IN_APP", handleOpenInApp, hotkeyOptions, [
+		handleOpenInApp,
+	]);
 
 	// Copy path shortcut
 	const { copyToClipboard } = useCopyToClipboard();

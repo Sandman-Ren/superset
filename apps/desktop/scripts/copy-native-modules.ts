@@ -24,8 +24,8 @@ import {
 	realpathSync,
 	rmSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { satisfies } from "semver";
 import { requiredMaterializedNodeModules } from "../runtime-dependencies";
 
@@ -269,16 +269,12 @@ function fetchNpmPackage(
 		// Download to a temp file first, then extract. This avoids shell pipe
 		// semantics which can be fragile across platforms (Windows cmd.exe vs bash).
 		// curl.exe and tar.exe ship with Windows 10+ and work identically to Unix.
-		const tempFile = join(
-			tmpdir(),
-			`npm-${barePackageName}-${version}.tgz`,
-		);
+		const tempFile = join(tmpdir(), `npm-${barePackageName}-${version}.tgz`);
 		try {
 			execSync(`curl -sLo "${tempFile}" "${url}"`, { stdio: "pipe" });
-			execSync(
-				`tar xzf "${tempFile}" -C "${destPath}" --strip-components=1`,
-				{ stdio: "pipe" },
-			);
+			execSync(`tar xzf "${tempFile}" -C "${destPath}" --strip-components=1`, {
+				stdio: "pipe",
+			});
 			console.log(`    Extracted to: ${destPath}`);
 			return true;
 		} finally {
@@ -532,9 +528,7 @@ function prepareNativeModules() {
 	// binaries. Bun keeps them in .bun/ so they're not resolvable from the
 	// desktop workspace's node_modules. Materialize the correct platform binary.
 	const OPTIONAL_PLATFORM_MODULES = [
-		...(process.platform === "win32"
-			? ["@lydell/node-pty-win32-x64"]
-			: []),
+		...(process.platform === "win32" ? ["@lydell/node-pty-win32-x64"] : []),
 		...(process.platform === "darwin" && process.arch === "arm64"
 			? ["@lydell/node-pty-darwin-arm64"]
 			: []),
@@ -560,9 +554,7 @@ function prepareNativeModules() {
 			}
 			const bunPrefix = moduleName.replace("/", "+");
 			const bunStoreEntries = existsSync(bunStoreDir)
-				? readdirSync(bunStoreDir).filter((e) =>
-						e.startsWith(`${bunPrefix}@`),
-					)
+				? readdirSync(bunStoreDir).filter((e) => e.startsWith(`${bunPrefix}@`))
 				: [];
 			if (bunStoreEntries.length === 0) {
 				console.warn(`  ${moduleName}: not found in Bun store (skipping)`);
@@ -575,9 +567,7 @@ function prepareNativeModules() {
 				moduleName,
 			);
 			if (!existsSync(sourcePath)) {
-				console.warn(
-					`  ${moduleName}: Bun store path missing (${sourcePath})`,
-				);
+				console.warn(`  ${moduleName}: Bun store path missing (${sourcePath})`);
 				continue;
 			}
 			console.log(`  ${moduleName}: copying from Bun store`);

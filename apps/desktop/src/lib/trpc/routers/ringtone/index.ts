@@ -45,12 +45,14 @@ function stopCurrentSound(): void {
 	if (process.platform === "win32") {
 		const windows = BrowserWindow.getAllWindows();
 		if (windows.length > 0 && windows[0].webContents) {
-			windows[0].webContents.executeJavaScript(`
+			windows[0].webContents
+				.executeJavaScript(`
 				if (window.__supersetPreviewAudio) {
 					window.__supersetPreviewAudio.pause();
 					window.__supersetPreviewAudio = null;
 				}
-			`).catch(() => {});
+			`)
+				.catch(() => {});
 		}
 	}
 }
@@ -87,7 +89,8 @@ function playSoundFile(soundPath: string): void {
 				const buf = readFileSync(soundPath);
 				const ext = soundPath.endsWith(".wav") ? "wav" : "mpeg";
 				const dataUrl = `data:audio/${ext};base64,${buf.toString("base64")}`;
-				windows[0].webContents.executeJavaScript(`
+				windows[0].webContents
+					.executeJavaScript(`
 					(function() {
 						if (window.__supersetPreviewAudio) {
 							window.__supersetPreviewAudio.pause();
@@ -102,7 +105,8 @@ function playSoundFile(soundPath: string): void {
 							}
 						};
 					})()
-				`).catch(() => {});
+				`)
+					.catch(() => {});
 			} catch {}
 		}
 	} else {

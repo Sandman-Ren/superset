@@ -409,7 +409,8 @@ export function WorkspaceListItem({
 									{shortcutIndex !== undefined &&
 										shortcutIndex < MAX_KEYBOARD_SHORTCUT_INDEX && (
 											<span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">
-												{platform === "darwin" ? "⌘" : "Ctrl+Shift+"}{shortcutIndex + 1}
+												{platform === "darwin" ? "⌘" : "Ctrl+Shift+"}
+												{shortcutIndex + 1}
 											</span>
 										)}
 									{!isBranchWorkspace && (

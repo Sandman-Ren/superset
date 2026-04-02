@@ -95,7 +95,8 @@ function forCurrentPlatform(
 	modules: ExternalizedRuntimeModule[],
 ): ExternalizedRuntimeModule[] {
 	return modules.filter(
-		(m) => !m.platforms || m.platforms.includes(process.platform as NodeJS.Platform),
+		(m) =>
+			!m.platforms || m.platforms.includes(process.platform as NodeJS.Platform),
 	);
 }
 

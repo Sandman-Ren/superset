@@ -9,18 +9,23 @@
  * app's materialized node_modules (not the Bun store).
  */
 
-import { rebuild } from "@electron/rebuild";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rebuild } from "@electron/rebuild";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopDir = join(__dirname, "..");
 const electronPkg = JSON.parse(
-	readFileSync(join(desktopDir, "node_modules", "electron", "package.json"), "utf8"),
+	readFileSync(
+		join(desktopDir, "node_modules", "electron", "package.json"),
+		"utf8",
+	),
 );
 
-console.log(`Rebuilding native modules for Electron ${electronPkg.version} (x64)...`);
+console.log(
+	`Rebuilding native modules for Electron ${electronPkg.version} (x64)...`,
+);
 
 try {
 	await rebuild({

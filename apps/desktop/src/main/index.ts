@@ -173,7 +173,10 @@ app.on("before-quit", async (event) => {
 
 	const isDev = process.env.NODE_ENV === "development";
 	const shouldConfirm =
-		!skipConfirmation && !isDev && !PLATFORM.IS_WINDOWS && getConfirmOnQuitSetting();
+		!skipConfirmation &&
+		!isDev &&
+		!PLATFORM.IS_WINDOWS &&
+		getConfirmOnQuitSetting();
 
 	if (shouldConfirm) {
 		event.preventDefault();
@@ -356,7 +359,14 @@ if (!gotTheLock) {
 		if (PLATFORM.IS_WINDOWS) {
 			const appSession = session.fromPartition("persist:superset");
 			appSession.webRequest.onBeforeSendHeaders(
-				{ urls: ["https://api.superset.sh/*", "https://*.posthog.com/*", "https://*.sentry.io/*", "https://app.outlit.ai/*"] },
+				{
+					urls: [
+						"https://api.superset.sh/*",
+						"https://*.posthog.com/*",
+						"https://*.sentry.io/*",
+						"https://app.outlit.ai/*",
+					],
+				},
 				(details, callback) => {
 					if (details.requestHeaders.Origin === "superset-app://app") {
 						delete details.requestHeaders.Origin;
