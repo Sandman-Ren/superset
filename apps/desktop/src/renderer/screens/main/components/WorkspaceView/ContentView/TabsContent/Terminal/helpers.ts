@@ -231,6 +231,12 @@ export function createTerminalInstance(
 		rafId = null;
 		if (isDisposed) return;
 		rendererRef.current = loadRenderer(xterm);
+		// Run the same recovery that tab-switching triggers:
+		// clear stale WebGL glyph cache, refit dimensions, and force a full repaint.
+		// Without this, the terminal shows garbled/overlapping text on Windows.
+		rendererRef.current.clearTextureAtlas?.();
+		fitAddon.fit();
+		xterm.refresh(0, xterm.rows - 1);
 	});
 
 	try {
@@ -655,6 +661,38 @@ export function setupKeyboardHandler(
 				options.onWrite("\x1bf"); // Meta+F - forward word
 			}
 			return false;
+		}
+
+		// Windows: Ctrl+C copies selected text to clipboard; if nothing is
+		// selected, fall through to send the normal interrupt signal.
+		if (
+			isWindows &&
+			event.type === "keydown" &&
+			event.ctrlKey &&
+			!event.shiftKey &&
+			!event.altKey &&
+			event.key === "c"
+		) {
+			if (xterm.hasSelection()) {
+				navigator.clipboard.writeText(xterm.getSelection());
+				xterm.clearSelection();
+				return false; // Copied — don't send interrupt
+			}
+			// No selection — fall through to terminal reserved handler (interrupt)
+		}
+
+		// Windows: Ctrl+V pastes from clipboard.
+		// xterm.js defaults to sending \x16 for Ctrl+V (Unix "quoted insert").
+		// Return false to block \x16 — the browser will fire a native paste event.
+		if (
+			isWindows &&
+			event.type === "keydown" &&
+			event.ctrlKey &&
+			!event.shiftKey &&
+			!event.altKey &&
+			event.key === "v"
+		) {
+			return false; // Block \x16; native paste event handles the rest
 		}
 
 		if (isTerminalReservedEvent(event)) return true;

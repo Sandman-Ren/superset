@@ -7,6 +7,7 @@ import {
 } from "main/lib/agent-setup/shell-wrappers";
 import { buildSafeEnv, sanitizeEnv } from "main/lib/terminal/env";
 import { SUPERSET_DIR_NAME } from "shared/constants";
+import treeKill from "tree-kill";
 import { removeWorktree } from "./git";
 import { loadSetupConfig } from "./setup";
 
@@ -43,8 +44,10 @@ export async function runTeardown({
 
 	try {
 		const shell =
-			process.env.SHELL ||
-			(process.platform === "darwin" ? "/bin/zsh" : "/bin/bash");
+			process.platform === "win32"
+				? process.env.COMSPEC || "cmd.exe"
+				: process.env.SHELL ||
+					(process.platform === "darwin" ? "/bin/zsh" : "/bin/bash");
 		const supersetHomeDir =
 			process.env.SUPERSET_HOME_DIR || join(homedir(), SUPERSET_DIR_NAME);
 		const shellWrapperPaths = {
@@ -60,8 +63,9 @@ export async function runTeardown({
 		const output = await new Promise<string>((resolve, reject) => {
 			const child = spawn(shell, args, {
 				cwd: worktreePath,
-				detached: true,
+				detached: process.platform !== "win32",
 				stdio: ["ignore", "pipe", "pipe"],
+				windowsHide: true,
 				env: {
 					...baseEnv,
 					...wrapperEnv,
@@ -111,10 +115,14 @@ export async function runTeardown({
 			const timer = setTimeout(() => {
 				settle(() => {
 					console.error(
-						`[teardown] Timed out after ${TEARDOWN_TIMEOUT_MS}ms, killing process group`,
+						`[teardown] Timed out after ${TEARDOWN_TIMEOUT_MS}ms, killing process tree`,
 					);
 					try {
-						if (child.pid) process.kill(-child.pid, "SIGKILL");
+						if (child.pid) {
+							// Use tree-kill for cross-platform process tree termination.
+							// Negative PID process group kill does not work on Windows.
+							treeKill(child.pid, "SIGKILL");
+						}
 					} catch {}
 					reject(
 						new Error(`Teardown timed out after ${TEARDOWN_TIMEOUT_MS}ms`),

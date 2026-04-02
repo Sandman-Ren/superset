@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { SUPERSET_MANAGED_BINARIES } from "./agent-wrappers-common";
+import {
+	SUPERSET_MANAGED_BINARIES,
+	type SupersetManagedBinary,
+} from "./desktop-agent-capabilities";
 import { BASH_DIR, BIN_DIR, ZSH_DIR } from "./paths";
 
 export interface ShellWrapperPaths {
@@ -85,7 +88,7 @@ function buildManagedCommandPrelude(shellName: string, binDir: string): string {
 	if (shellName === "fish") {
 		const escapedBinDir = escapeFishDoubleQuoted(binDir);
 		return SUPERSET_MANAGED_BINARIES.map(
-			(name) =>
+			(name: SupersetManagedBinary) =>
 				`functions -q ${name}; and functions -e ${name}
 function ${name}
   set -l _superset_wrapper "${escapedBinDir}/${name}"
@@ -99,7 +102,7 @@ end`,
 	}
 
 	return SUPERSET_MANAGED_BINARIES.map(
-		(name) =>
+		(name: SupersetManagedBinary) =>
 			`unalias ${name} 2>/dev/null || true
 ${name}() {
   _superset_wrapper=${quoteShellLiteral(`${binDir}/${name}`)}
@@ -335,6 +338,15 @@ export function getShellArgs(
 	if (["zsh", "sh", "ksh"].includes(shellName)) {
 		return ["-l"];
 	}
+	// Windows shells: cmd.exe starts interactive by default, PowerShell needs -NoExit
+	if (["cmd.exe", "cmd"].includes(shellName)) {
+		return [];
+	}
+	if (
+		["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)
+	) {
+		return ["-NoLogo"];
+	}
 	return [];
 }
 
@@ -357,6 +369,16 @@ export function getCommandShellArgs(
 	logModeDiagnostics(shellName);
 	const zshRc = path.join(paths.ZSH_DIR, ".zshrc");
 	const bashRcfile = path.join(paths.BASH_DIR, "rcfile");
+	// Windows shells use different command execution syntax
+	if (["cmd.exe", "cmd"].includes(shellName)) {
+		return ["/c", command];
+	}
+	if (
+		["powershell.exe", "powershell", "pwsh.exe", "pwsh"].includes(shellName)
+	) {
+		return ["-NoLogo", "-Command", command];
+	}
+
 	const commandWithManagedPrelude = `${buildManagedCommandPrelude(shellName, paths.BIN_DIR)}\n${command}`;
 	if (shellName === "zsh" && fs.existsSync(zshRc)) {
 		return [

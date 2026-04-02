@@ -24,7 +24,8 @@ import {
 	realpathSync,
 	rmSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { satisfies } from "semver";
 import { requiredMaterializedNodeModules } from "../runtime-dependencies";
 
@@ -64,6 +65,29 @@ function findBunStoreFolderName(
 	return entries.find((entry) => entry.startsWith(modulePrefix)) ?? null;
 }
 
+/**
+ * Detect if a path is a symlink or an NTFS junction.
+ * Bun on Windows uses NTFS junctions instead of symlinks, and
+ * lstatSync().isSymbolicLink() returns false for junctions.
+ */
+function isSymlinkOrJunction(modulePath: string): boolean {
+	const stats = lstatSync(modulePath);
+	if (stats.isSymbolicLink()) return true;
+
+	// On Windows, Bun uses NTFS junctions which lstat reports as directories.
+	// Detect by comparing the resolved path against the original.
+	if (process.platform === "win32" && stats.isDirectory()) {
+		try {
+			const realPath = realpathSync(modulePath);
+			return resolve(realPath) !== resolve(modulePath);
+		} catch {
+			return false;
+		}
+	}
+
+	return false;
+}
+
 function copyModuleIfSymlink(
 	nodeModulesDir: string,
 	moduleName: string,
@@ -89,16 +113,16 @@ function copyModuleIfSymlink(
 		return false;
 	}
 
-	const stats = lstatSync(modulePath);
-
-	if (stats.isSymbolicLink()) {
-		// Resolve symlink to get real path
+	if (isSymlinkOrJunction(modulePath)) {
+		// Resolve symlink/junction to get real path
 		const realPath = realpathSync(modulePath);
-		console.log(`  ${moduleName}: symlink -> replacing with real files`);
+		console.log(
+			`  ${moduleName}: symlink/junction -> replacing with real files`,
+		);
 		console.log(`    Real path: ${realPath}`);
 
-		// Remove the symlink
-		rmSync(modulePath);
+		// Remove the symlink/junction
+		rmSync(modulePath, { recursive: process.platform === "win32" });
 
 		// Copy the actual files
 		cpSync(realPath, modulePath, { recursive: true });
@@ -241,14 +265,25 @@ function fetchNpmPackage(
 	console.log(`  ${packageName}: fetching from npm (${version})`);
 	try {
 		mkdirSync(destPath, { recursive: true });
-		execSync(
-			`curl -sL "${url}" | tar xz -C "${destPath}" --strip-components=1`,
-			{
+
+		// Download to a temp file first, then extract. This avoids shell pipe
+		// semantics which can be fragile across platforms (Windows cmd.exe vs bash).
+		// curl.exe and tar.exe ship with Windows 10+ and work identically to Unix.
+		const tempFile = join(tmpdir(), `npm-${barePackageName}-${version}.tgz`);
+		try {
+			execSync(`curl -sLo "${tempFile}" "${url}"`, { stdio: "pipe" });
+			execSync(`tar xzf "${tempFile}" -C "${destPath}" --strip-components=1`, {
 				stdio: "pipe",
-			},
-		);
-		console.log(`    Extracted to: ${destPath}`);
-		return true;
+			});
+			console.log(`    Extracted to: ${destPath}`);
+			return true;
+		} finally {
+			try {
+				rmSync(tempFile);
+			} catch {
+				// Best effort cleanup
+			}
+		}
 	} catch (err) {
 		console.error(
 			`  [ERROR] Failed to fetch ${packageName}@${version}: ${err}`,
@@ -488,6 +523,58 @@ function prepareNativeModules() {
 	copyAstGrepPlatformPackages(nodeModulesDir);
 	copyParcelWatcherPlatformPackages(nodeModulesDir);
 	copyLibsqlDependencies(nodeModulesDir);
+
+	// @lydell/node-pty uses optionalDependencies for platform-specific native
+	// binaries. Bun keeps them in .bun/ so they're not resolvable from the
+	// desktop workspace's node_modules. Materialize the correct platform binary.
+	const OPTIONAL_PLATFORM_MODULES = [
+		...(process.platform === "win32" ? ["@lydell/node-pty-win32-x64"] : []),
+		...(process.platform === "darwin" && process.arch === "arm64"
+			? ["@lydell/node-pty-darwin-arm64"]
+			: []),
+		...(process.platform === "darwin" && process.arch === "x64"
+			? ["@lydell/node-pty-darwin-x64"]
+			: []),
+		...(process.platform === "linux" && process.arch === "x64"
+			? ["@lydell/node-pty-linux-x64"]
+			: []),
+		...(process.platform === "linux" && process.arch === "arm64"
+			? ["@lydell/node-pty-linux-arm64"]
+			: []),
+	];
+
+	if (OPTIONAL_PLATFORM_MODULES.length > 0) {
+		console.log("\nPreparing @lydell/node-pty platform modules...");
+		const bunStoreDir = getBunStoreDir(nodeModulesDir);
+		for (const moduleName of OPTIONAL_PLATFORM_MODULES) {
+			const destPath = join(nodeModulesDir, moduleName);
+			if (existsSync(destPath)) {
+				copyModuleIfSymlink(nodeModulesDir, moduleName, false);
+				continue;
+			}
+			const bunPrefix = moduleName.replace("/", "+");
+			const bunStoreEntries = existsSync(bunStoreDir)
+				? readdirSync(bunStoreDir).filter((e) => e.startsWith(`${bunPrefix}@`))
+				: [];
+			if (bunStoreEntries.length === 0) {
+				console.warn(`  ${moduleName}: not found in Bun store (skipping)`);
+				continue;
+			}
+			const sourcePath = join(
+				bunStoreDir,
+				bunStoreEntries.sort().reverse()[0],
+				"node_modules",
+				moduleName,
+			);
+			if (!existsSync(sourcePath)) {
+				console.warn(`  ${moduleName}: Bun store path missing (${sourcePath})`);
+				continue;
+			}
+			console.log(`  ${moduleName}: copying from Bun store`);
+			mkdirSync(dirname(destPath), { recursive: true });
+			cpSync(sourcePath, destPath, { recursive: true });
+		}
+	}
 
 	console.log("\nDone!");
 }

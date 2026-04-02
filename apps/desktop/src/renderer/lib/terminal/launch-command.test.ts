@@ -27,7 +27,7 @@ describe("launchCommandInPane", () => {
 		});
 		expect(write).toHaveBeenCalledWith({
 			paneId: "pane-1",
-			data: "echo hello\n",
+			data: "echo hello\r",
 			throwOnError: true,
 		});
 	});
@@ -102,7 +102,7 @@ describe("writeCommandsInPane", () => {
 
 		expect(write).toHaveBeenCalledWith({
 			paneId: "pane-1",
-			data: "echo one && echo two\n",
+			data: "echo one && echo two\r",
 			throwOnError: true,
 		});
 	});

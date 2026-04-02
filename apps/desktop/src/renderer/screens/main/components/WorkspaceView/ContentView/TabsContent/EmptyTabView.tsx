@@ -1,11 +1,11 @@
 import type { ExternalApp } from "@superset/local-db";
-import { useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import type { IconType } from "react-icons";
 import { BsTerminalPlus } from "react-icons/bs";
 import { LuExternalLink, LuSearch, LuTrash2 } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { getAppOption } from "renderer/components/OpenInExternalDropdown";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWorkspaceDeleteHandler } from "renderer/react-query/workspaces";
 import { DeleteWorkspaceDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components/DeleteWorkspaceDialog/DeleteWorkspaceDialog";
@@ -35,9 +35,7 @@ export function EmptyTabView({
 	onOpenInApp,
 	onOpenQuickOpen,
 }: EmptyTabViewProps) {
-	const { workspaceId } = useParams({
-		from: "/_authenticated/_dashboard/workspace/$workspaceId/",
-	});
+	const workspaceId = useWorkspaceId();
 	const addChatTab = useTabsStore((s) => s.addChatTab);
 	const addBrowserTab = useTabsStore((s) => s.addBrowserTab);
 	const activeTheme = useTheme();

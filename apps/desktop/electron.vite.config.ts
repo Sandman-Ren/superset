@@ -15,6 +15,7 @@ import {
 	defineEnv,
 	devPath,
 	htmlEnvTransformPlugin,
+	stripCrossOriginPlugin,
 } from "./vite/helpers";
 
 // override: true ensures .env values take precedence over inherited env vars
@@ -113,6 +114,7 @@ export default defineConfig({
 				},
 				output: {
 					dir: resolve(devPath, "main"),
+					banner: "delete globalThis.process.env.ELECTRON_RUN_AS_NODE;",
 				},
 				external: ["electron", ...mainExternalizedDependencies],
 				plugins: [sentryPlugin].filter(Boolean),
@@ -236,6 +238,7 @@ export default defineConfig({
 			}),
 			reactPlugin(),
 			htmlEnvTransformPlugin(),
+			stripCrossOriginPlugin(),
 		],
 
 		worker: {

@@ -1,7 +1,7 @@
 import type { TerminalPreset } from "@superset/local-db";
 import { eq, or } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
 	useCallback,
 	useEffect,
@@ -10,6 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useWorkspaceId } from "renderer/contexts/WorkspaceIdContext";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { usePresets } from "renderer/react-query/presets";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
@@ -31,7 +32,7 @@ import { GroupItem } from "./GroupItem";
 const NO_WORKSPACE_MATCH = "__no_workspace__";
 
 export function GroupStrip() {
-	const { workspaceId: activeWorkspaceId } = useParams({ strict: false });
+	const activeWorkspaceId = useWorkspaceId();
 
 	const allTabs = useTabsStore((s) => s.tabs);
 	const panes = useTabsStore((s) => s.panes);

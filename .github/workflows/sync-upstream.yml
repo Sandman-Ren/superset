@@ -1,0 +1,79 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 6:00 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync with upstream
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/superset-sh/superset.git || true
+          git fetch upstream main
+
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/main)
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          echo "Fork is $BEHIND commits behind upstream"
+
+      - name: Create sync branch and PR
+        if: steps.check.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="sync/upstream-$(date +%Y%m%d)"
+
+          # Check if a sync PR already exists
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "Sync PR #$EXISTING already exists, skipping"
+            exit 0
+          fi
+
+          git checkout -b "$BRANCH"
+          git merge upstream/main --no-edit || {
+            echo "::warning::Merge conflicts detected — manual resolution required"
+            git merge --abort
+            # Still create the PR so we know about it
+            git merge upstream/main --no-commit --no-ff || true
+            git checkout --theirs . 2>/dev/null || true
+            git add -A
+            git commit -m "sync: merge upstream (conflicts need resolution)" --allow-empty
+          }
+
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "sync: merge upstream changes ($(date +%Y-%m-%d))" \
+            --body "$(cat <<'EOF'
+          ## Automated upstream sync
+
+          This PR merges the latest changes from the upstream repository.
+
+          **Review carefully** — check for:
+          - Conflicts with fork-specific changes (Windows support, custom workflows)
+          - New workflows that should be removed for the fork
+          - Breaking changes to shared code
+
+          > Created automatically by the sync-upstream workflow.
+          EOF
+          )" \
+            --base dev

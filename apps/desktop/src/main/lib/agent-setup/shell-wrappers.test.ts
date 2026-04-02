@@ -410,7 +410,15 @@ echo wrapper
 
 	it("returns empty args for unrecognized shells", () => {
 		expect(getShellArgs("/bin/csh")).toEqual([]);
-		expect(getShellArgs("powershell")).toEqual([]);
+	});
+
+	it("returns correct args for Windows shells", () => {
+		expect(getShellArgs("cmd.exe")).toEqual([]);
+		expect(getShellArgs("cmd")).toEqual([]);
+		expect(getShellArgs("powershell")).toEqual(["-NoLogo"]);
+		expect(getShellArgs("powershell.exe")).toEqual(["-NoLogo"]);
+		expect(getShellArgs("pwsh")).toEqual(["-NoLogo"]);
+		expect(getShellArgs("pwsh.exe")).toEqual(["-NoLogo"]);
 	});
 
 	it("zsh BIN_DIR survives a late precmd PATH reset from user .zlogin", () => {

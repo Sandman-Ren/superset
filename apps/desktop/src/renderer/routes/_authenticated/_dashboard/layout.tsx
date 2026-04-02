@@ -6,9 +6,10 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useFeatureFlagEnabled } from "posthog-js/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { DashboardSidebar } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar";
+import { WorkspaceContent } from "renderer/routes/_authenticated/_dashboard/workspace/$workspaceId/WorkspaceContent";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
 import { WorkspaceSidebar } from "renderer/screens/main/components/WorkspaceSidebar";
 import { DeleteWorkspaceDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components";
@@ -25,6 +26,58 @@ import { TopBar } from "./components/TopBar";
 export const Route = createFileRoute("/_authenticated/_dashboard")({
 	component: DashboardLayout,
 });
+
+/**
+ * Maximum number of workspaces to keep mounted simultaneously.
+ * When exceeded, the least-recently-visited workspace is unmounted (and its
+ * terminals are disposed). A value of 5 covers most real-world usage patterns.
+ */
+const MAX_ALIVE_WORKSPACES = 5;
+
+/**
+ * Keeps visited workspace content trees mounted (display:none when inactive)
+ * so that terminals are never destroyed and recreated on workspace switch.
+ * This eliminates the 2s+ full-window freeze caused by XTerm re-initialization.
+ */
+function WorkspaceKeepAlive({
+	currentWorkspaceId,
+}: {
+	currentWorkspaceId: string | null;
+}) {
+	// Ordered list of workspace IDs to keep alive, most-recently-used first.
+	const [aliveIds, setAliveIds] = useState<string[]>(() =>
+		currentWorkspaceId ? [currentWorkspaceId] : [],
+	);
+
+	useEffect(() => {
+		if (!currentWorkspaceId) return;
+
+		setAliveIds((prev) => {
+			// Move to front (most-recently-used) and trim to limit
+			const without = prev.filter((id) => id !== currentWorkspaceId);
+			return [currentWorkspaceId, ...without].slice(0, MAX_ALIVE_WORKSPACES);
+		});
+	}, [currentWorkspaceId]);
+
+	if (aliveIds.length === 0) return null;
+
+	return (
+		<>
+			{aliveIds.map((wsId) => (
+				<div
+					key={wsId}
+					className="flex-1 min-h-0 min-w-0 overflow-hidden"
+					style={{ display: wsId === currentWorkspaceId ? "flex" : "none" }}
+				>
+					<WorkspaceContent
+						workspaceId={wsId}
+						isActive={wsId === currentWorkspaceId}
+					/>
+				</div>
+			))}
+		</>
+	);
+}
 
 function DashboardLayout() {
 	const navigate = useNavigate();
@@ -145,8 +198,31 @@ function DashboardLayout() {
 						)}
 					</ResizablePanel>
 				)}
-				<div className="flex flex-1 min-h-0 min-w-0">
-					<Outlet />
+				{/*
+				 * Main content area.
+				 *
+				 * WorkspaceKeepAlive renders workspace content trees for all recently
+				 * visited workspaces, toggling display:none on inactive ones.
+				 * This keeps terminals mounted so they never need to be recreated.
+				 *
+				 * The Outlet renders the thin WorkspacePage route shell (loader guard +
+				 * search-param tab activation). It returns null so it contributes no
+				 * layout. For non-workspace routes (settings etc.) the Outlet renders
+				 * that route component normally while WorkspaceKeepAlive is hidden.
+				 */}
+				<div className="flex flex-1 min-h-0 min-w-0 relative">
+					{/* Workspace content — absolutely fills the area, toggled by display:none */}
+					{currentWorkspaceId !== null && (
+						<div className="absolute inset-0 flex">
+							<WorkspaceKeepAlive currentWorkspaceId={currentWorkspaceId} />
+						</div>
+					)}
+					{/* Route outlet — workspace pages return null; non-workspace pages render normally */}
+					<div
+						className={`flex-1 min-h-0 min-w-0${currentWorkspaceId !== null ? " pointer-events-none" : ""}`}
+					>
+						<Outlet />
+					</div>
 				</div>
 				{deleteTarget && (
 					<DeleteWorkspaceDialog

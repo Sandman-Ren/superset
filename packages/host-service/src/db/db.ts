@@ -11,7 +11,10 @@ function getMigrationsFolder(): string {
 	const resourcesPath = (process as unknown as Record<string, unknown>)
 		.resourcesPath as string | undefined;
 	if (resourcesPath && !process.env.ELECTRON_RUN_AS_NODE) {
-		return join(resourcesPath, "resources/host-migrations");
+		const productionPath = join(resourcesPath, "resources/host-migrations");
+		if (existsSync(productionPath)) {
+			return productionPath;
+		}
 	}
 
 	if (process.env.HOST_MIGRATIONS_PATH) {
