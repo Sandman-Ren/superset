@@ -39,7 +39,11 @@ const MAX_ALIVE_WORKSPACES = 5;
  * so that terminals are never destroyed and recreated on workspace switch.
  * This eliminates the 2s+ full-window freeze caused by XTerm re-initialization.
  */
-function WorkspaceKeepAlive({ currentWorkspaceId }: { currentWorkspaceId: string | null }) {
+function WorkspaceKeepAlive({
+	currentWorkspaceId,
+}: {
+	currentWorkspaceId: string | null;
+}) {
 	// Ordered list of workspace IDs to keep alive, most-recently-used first.
 	const [aliveIds, setAliveIds] = useState<string[]>(() =>
 		currentWorkspaceId ? [currentWorkspaceId] : [],
@@ -65,7 +69,10 @@ function WorkspaceKeepAlive({ currentWorkspaceId }: { currentWorkspaceId: string
 					className="flex-1 min-h-0 min-w-0 overflow-hidden"
 					style={{ display: wsId === currentWorkspaceId ? "flex" : "none" }}
 				>
-					<WorkspaceContent workspaceId={wsId} isActive={wsId === currentWorkspaceId} />
+					<WorkspaceContent
+						workspaceId={wsId}
+						isActive={wsId === currentWorkspaceId}
+					/>
 				</div>
 			))}
 		</>
@@ -211,7 +218,9 @@ function DashboardLayout() {
 						</div>
 					)}
 					{/* Route outlet — workspace pages return null; non-workspace pages render normally */}
-					<div className={`flex-1 min-h-0 min-w-0${currentWorkspaceId !== null ? " pointer-events-none" : ""}`}>
+					<div
+						className={`flex-1 min-h-0 min-w-0${currentWorkspaceId !== null ? " pointer-events-none" : ""}`}
+					>
 						<Outlet />
 					</div>
 				</div>

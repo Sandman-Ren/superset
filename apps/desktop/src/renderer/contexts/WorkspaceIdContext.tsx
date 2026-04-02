@@ -35,7 +35,9 @@ export function useWorkspaceId(): string {
 		workspaceId: string | undefined;
 	};
 	if (!workspaceId) {
-		throw new Error("useWorkspaceId called outside a workspace route or WorkspaceIdProvider");
+		throw new Error(
+			"useWorkspaceId called outside a workspace route or WorkspaceIdProvider",
+		);
 	}
 	return workspaceId;
 }
